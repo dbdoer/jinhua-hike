@@ -20,6 +20,7 @@ const state = {
   dist: 'all', q: '', sort: 'distance',
   selected: null, base: 'liberty',
 };
+let lastRegionSig = '';
 
 /* ----------------------------- 地图 ----------------------------- */
 const map = new maplibregl.Map({
@@ -51,6 +52,11 @@ map.on('load', () => {
   map.addLayer({ id: 'base-sat', type: 'raster', source: 'sat', layout: { visibility: 'none' } });
 
   // 2) 路线
+  // 字号栈必须跟着当前底图样式走，否则 MapLibre 会用默认的 Open Sans/Arial Unicode MS，
+  // OpenFreeMap 上没有这两个字体，中文标注直接 404 不显示
+  const FONT = ((map.getStyle().layers.find(l => l.layout && l.layout['text-font']) || {}).layout || {})['text-font']
+    || ['Noto Sans Regular'];
+
   map.addSource('routes', { type: 'geojson', data: emptyFC, promoteId: 'id' });
   map.addSource('ends', { type: 'geojson', data: emptyFC, promoteId: 'id' });
   map.addSource('annos', { type: 'geojson', data: emptyFC, promoteId: 'id' });
@@ -79,7 +85,7 @@ map.on('load', () => {
   map.addLayer({
     id: 'route-label', type: 'symbol', source: 'routes', minzoom: 10.5,
     layout: {
-      'text-field': ['get', 'name'], 'text-size': 12,
+      'text-field': ['get', 'name'], 'text-font': FONT, 'text-size': 12,
       'text-offset': [0, -0.9], 'text-anchor': 'bottom', 'text-allow-overlap': false,
     },
     paint: { 'text-color': '#0f172a', 'text-halo-color': '#fff', 'text-halo-width': 1.6 },
@@ -201,7 +207,16 @@ function refresh() {
   renderList(list);
   document.getElementById('cnt-hit').textContent = list.length;
   document.getElementById('cnt-all').textContent = '/ ' + routes.length + ' 条路线';
+
+  // 导入新轨迹会带来新区域，chip 要跟着重建，否则新区域没法筛
+  const sig = uniq('region').sort().join('|');
+  if (sig !== lastRegionSig) { lastRegionSig = sig; buildFilterChips(); }
   updateChips();
+
+  // 窄屏收起时，生效的筛选数写在「筛选」按钮上——筛选状态不能被折叠藏起来
+  const nAct = state.regions.size + state.diffs.size + (state.dist !== 'all' ? 1 : 0)
+    + (state.family ? 1 : 0) + (state.water ? 1 : 0);
+  document.getElementById('filter-count').textContent = nAct ? String(nAct) : '';
 }
 
 /* --------------------------- 列表卡片 --------------------------- */
@@ -487,6 +502,28 @@ document.getElementById('btn-reset').onclick = () => {
   map.fitBounds(JINHUA.bounds, { padding: 40, duration: 700 });
 };
 document.getElementById('btn-back').onclick = backToList;
+
+/* 窄屏折叠：筛选条件默认收成一行，点「筛选」展开（宽屏这个按钮不出现） */
+const barEl = document.getElementById('bar');
+const filterToggle = document.getElementById('btn-filter-toggle');
+function setFiltersOpen(open) {
+  barEl.classList.toggle('open', open);
+  filterToggle.setAttribute('aria-expanded', String(open));
+}
+filterToggle.onclick = () => setFiltersOpen(!barEl.classList.contains('open'));
+// 窄屏搜索框只有一百多像素宽，长占位文案会被切掉半句，换成短的
+const qInput = document.getElementById('f-q');
+const Q_LONG = qInput.placeholder;
+const Q_SHORT = '搜索路线 / 标注点';
+function syncPlaceholder() {
+  qInput.placeholder = window.matchMedia('(max-width: 900px)').matches ? Q_SHORT : Q_LONG;
+}
+syncPlaceholder();
+// 拖到宽屏就把折叠状态丢掉，免得缩回来时莫名其妙是展开的
+window.addEventListener('resize', () => {
+  if (!window.matchMedia('(max-width: 900px)').matches) setFiltersOpen(false);
+  syncPlaceholder();
+});
 
 document.querySelectorAll('#base-switch button').forEach(b => {
   b.onclick = () => {

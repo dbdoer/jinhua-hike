@@ -49,6 +49,14 @@ button.primary:hover{background:#047857}
 .base-switch button{border:none;border-radius:0;padding:5px 11px;background:#fff;color:var(--ink2);font-size:12px}
 .base-switch button.on{background:var(--ink);color:#fff}
 
+/* 窄屏折叠按钮：宽屏不出现（样式在下面的 media query 里打开） */
+.filter-toggle{display:none;align-items:center;gap:5px;white-space:nowrap}
+.filter-toggle .n{background:var(--green);color:#fff;border-radius:999px;padding:0 6px;font-size:11px;line-height:17px}
+.filter-toggle .n:empty{display:none}
+.filter-toggle .caret{font-size:10px;color:var(--ink3);transition:transform .15s}
+.bar.open .filter-toggle .caret{transform:rotate(180deg)}
+.only-narrow{display:none}
+
 /* ---------- 右侧面板 ---------- */
 #panel{
   position:absolute;top:150px;right:12px;bottom:12px;width:378px;z-index:4;
@@ -124,6 +132,23 @@ button.primary:hover{background:#047857}
 .drop div{border:2px dashed var(--green);border-radius:16px;padding:28px 40px;background:#fff;font-size:16px;color:var(--green)}
 .maplibregl-popup-content{font:13px/1.5 -apple-system,"Microsoft YaHei",sans-serif;border-radius:10px;padding:9px 12px}
 @media (max-width:900px){
+  /* 窄屏：筛选条件默认收成一行——品牌 + 筛选按钮 + 搜索 + 导入，其余点「筛选」再展开 */
+  .bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 10px}
+  .bar:not(.open){flex-wrap:nowrap}
+  .brand{flex:0 0 auto;margin:0;font-size:13.5px}
+  .brand .sub{display:none}
+  .filter-toggle{display:inline-flex;order:1}
+  .filters{order:2;flex:1 1 auto;min-width:0;flex-wrap:nowrap;align-items:center;gap:8px}
+  .bar:not(.open) .filters .adv{display:none}
+  .bar:not(.open) .filters label{display:none}
+  .bar:not(.open) .filters .fg.grow{flex:1 1 0;min-width:0}
+  .bar:not(.open) #f-q{width:100%}
+  .bar:not(.open) #btn-import{padding:6px 10px;white-space:nowrap;flex:0 0 auto}
+  .bar.open .filters{flex:1 1 100%;flex-wrap:wrap;gap:10px 14px;align-items:flex-end}
+  .base-switch{display:none}
+  .bar.open .base-switch{display:flex;position:static;order:3}
+  .only-wide{display:none}
+  .only-narrow{display:inline}
   #panel{top:auto;left:12px;right:12px;bottom:12px;width:auto;height:46%}
   .legend{display:none}
 }

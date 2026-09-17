@@ -12,25 +12,30 @@
 <div id="map"></div>
 
 <!-- 顶部筛选条 -->
-<header class="bar">
+<header class="bar" id="bar">
   <div class="brand">
     <span class="dot"></span>
-    <b>金华徒步路线</b>
+    <b><span class="only-wide">金华徒步路线</span><span class="only-narrow">金华徒步</span></b>
     <span class="sub">数据源：两步路用户上传轨迹</span>
   </div>
 
-  <div class="filters">
-    <div class="fg" id="fg-region">
+  <!-- 窄屏下筛选条件收成一行，点这里展开；宽屏这个按钮不出现 -->
+  <button id="btn-filter-toggle" class="filter-toggle" aria-expanded="false" aria-controls="filters">
+    筛选<span class="n" id="filter-count"></span><span class="caret">▾</span>
+  </button>
+
+  <div class="filters" id="filters">
+    <div class="fg adv" id="fg-region">
       <label>区域</label>
       <div class="chips" data-group="region"></div>
     </div>
 
-    <div class="fg" id="fg-diff">
+    <div class="fg adv" id="fg-diff">
       <label>难度</label>
       <div class="chips" data-group="difficulty"></div>
     </div>
 
-    <div class="fg">
+    <div class="fg adv">
       <label>距离</label>
       <select id="f-dist">
         <option value="all">全部</option>
@@ -40,7 +45,7 @@
       </select>
     </div>
 
-    <div class="fg toggles">
+    <div class="fg toggles adv">
       <label class="tg"><input type="checkbox" id="f-family"><span>亲子</span></label>
       <label class="tg"><input type="checkbox" id="f-water"><span>涉水 / 瀑布</span></label>
       <label class="tg"><input type="checkbox" id="f-wpt" checked><span>沿途标注点</span></label>
@@ -51,7 +56,7 @@
       <input id="f-q" type="search" placeholder="路线名 / 描述 / 标注点，如：瀑布、古道">
     </div>
 
-    <div class="fg">
+    <div class="fg adv">
       <label>排序</label>
       <select id="f-sort">
         <option value="distance">距离</option>
@@ -60,8 +65,8 @@
       </select>
     </div>
 
-    <button id="btn-reset" class="ghost">重置</button>
-    <button id="btn-import" class="primary">导入 GPX</button>
+    <button id="btn-reset" class="ghost adv">重置</button>
+    <button id="btn-import" class="primary"><span class="only-wide">导入 GPX</span><span class="only-narrow">导入</span></button>
     <input type="file" id="file-input" accept=".gpx" multiple hidden>
   </div>
 
