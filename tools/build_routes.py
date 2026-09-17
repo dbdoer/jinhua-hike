@@ -1,0 +1,330 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+两步路 GPX 轨迹 -> 网页 demo 用的 routes.json / routes.geojson
+
+用法:
+    python tools/build_routes.py            # 读 gpx/*.gpx，输出 data/
+    python tools/build_routes.py --src gpx  # 指定来源目录
+
+所有派生字段的来源都在 README 里写明，不确定的字段一律给 null，
+不猜、不编。新增轨迹只需把两步路导出的 GPX 丢进 gpx/ 再跑一次。
+"""
+import argparse
+import json
+import math
+import os
+import re
+import sys
+import xml.etree.ElementTree as ET
+from datetime import datetime, timezone
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# 金华各县市区近似中心点，只用于「按区域筛选」的兜底归类（PosStartName 缺失时才用）
+COUNTY_CENTERS = {
+    "婺城区": (29.085, 119.571),
+    "金东区": (29.199, 119.692),
+    "兰溪市": (29.209, 119.460),
+    "义乌市": (29.306, 120.075),
+    "东阳市": (29.290, 120.242),
+    "永康市": (28.888, 120.047),
+    "武义县": (28.893, 119.816),
+    "浦江县": (29.452, 119.892),
+    "磐安县": (29.054, 120.450),
+}
+
+# 关键词识别：只在轨迹描述/标注点名称里找，找不到就是 null（未知），不推断
+WATER_KEYS = ("瀑布", "溪", "涧", "水潭", "深潭", "水源", "涉水")
+FAMILY_KEYS = ("亲子", "家庭", "儿童", "遛娃")
+
+
+def strip_ns(tag):
+    return tag.split("}", 1)[1] if "}" in tag else tag
+
+
+def kids(el, name):
+    return [c for c in el if strip_ns(c.tag) == name]
+
+
+def child_text(el, name):
+    for c in el:
+        if strip_ns(c.tag) == name:
+            return (c.text or "").strip()
+    return None
+
+
+def all_text(el, name):
+    return [kids(el, name)[0].text.strip() if kids(el, name) else None for _ in ()] or None
+
+
+def haversine(lat1, lon1, lat2, lon2):
+    R = 6371.0088
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    dp = math.radians(lat2 - lat1)
+    dl = math.radians(lon2 - lon1)
+    a = math.sin(dp / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
+    return 2 * R * math.asin(math.sqrt(a))
+
+
+def rdp(points, eps):
+    """Douglas-Peucker 抽稀，points = [[lon,lat,ele?], ...]"""
+    if len(points) < 3:
+        return points
+    keep = [False] * len(points)
+    keep[0] = keep[-1] = True
+    stack = [(0, len(points) - 1)]
+    while stack:
+        i0, i1 = stack.pop()
+        if i1 <= i0 + 1:
+            continue
+        (x0, y0), (x1, y1) = points[i0][:2], points[i1][:2]
+        dx, dy = x1 - x0, y1 - y0
+        seg = math.hypot(dx, dy) or 1e-12
+        best, best_i = -1.0, -1
+        for i in range(i0 + 1, i1):
+            px, py = points[i][:2]
+            d = abs(dy * px - dx * py + x1 * y0 - y1 * x0) / seg
+            if d > best:
+                best, best_i = d, i
+        if best > eps:
+            keep[best_i] = True
+            stack.append((i0, best_i))
+            stack.append((best_i, i1))
+    return [p for p, k in zip(points, keep) if k]
+
+
+def parse_gpx(path):
+    tree = ET.parse(path)
+    root = tree.getroot()
+
+    gpx_ext = None
+    for c in root:
+        if strip_ns(c.tag) == "extensions":
+            gpx_ext = {strip_ns(x.tag): (x.text or "").strip() for x in c}
+            break
+    gpx_ext = gpx_ext or {}
+
+    trkpts, wpts = [], []
+    for el in root.iter():
+        t = strip_ns(el.tag)
+        if t == "trkpt" and el.get("lat"):
+            trkpts.append({
+                "lat": float(el.get("lat")),
+                "lon": float(el.get("lon")),
+                "ele": float(child_text(el, "ele")) if child_text(el, "ele") else None,
+                "time": child_text(el, "time"),
+            })
+        elif t == "wpt" and el.get("lat"):
+            wpts.append({
+                "lat": float(el.get("lat")),
+                "lon": float(el.get("lon")),
+                "name": child_text(el, "name") or "",
+                "desc": child_text(el, "desc") or "",
+                "cmt": child_text(el, "cmt") or "",
+                "ele": float(child_text(el, "ele")) if child_text(el, "ele") else None,
+                "time": child_text(el, "time"),
+            })
+
+    if not trkpts:
+        raise ValueError("没有 trkpt")
+
+    # 距离
+    dist = 0.0
+    for a, b in zip(trkpts, trkpts[1:]):
+        dist += haversine(a["lat"], a["lon"], b["lat"], b["lon"])
+
+    # 累计爬升/下降：3m 阈值滞回，滤掉 GPS 高程抖动
+    ascent = descent = 0.0
+    TH = 3.0
+    ref = None
+    for p in trkpts:
+        if p["ele"] is None:
+            continue
+        if ref is None:
+            ref = p["ele"]
+            continue
+        d = p["ele"] - ref
+        if d >= TH:
+            ascent += d
+            ref = p["ele"]
+        elif d <= -TH:
+            descent += -d
+            ref = p["ele"]
+
+    eles = [p["ele"] for p in trkpts if p["ele"] is not None]
+    lats = [p["lat"] for p in trkpts]
+    lons = [p["lon"] for p in trkpts]
+
+    # 用时：优先用 trkpt 时间戳，其次用两步路扩展里的 TimeUsed
+    dur_s = None
+    ts = [p["time"] for p in trkpts if p["time"]]
+    if len(ts) >= 2:
+        fmt = "%Y-%m-%dT%H:%M:%SZ"
+        try:
+            t0 = datetime.strptime(ts[0], fmt).replace(tzinfo=timezone.utc)
+            t1 = datetime.strptime(ts[-1], fmt).replace(tzinfo=timezone.utc)
+            dur_s = (t1 - t0).total_seconds()
+        except ValueError:
+            dur_s = None
+    if dur_s is None and gpx_ext.get("TimeUsed"):
+        dur_s = float(gpx_ext["TimeUsed"]) / 1000.0
+    pause_s = float(gpx_ext["PauseTime"]) / 1000.0 if gpx_ext.get("PauseTime") else None
+
+    # 抽稀（约 4m 容差）
+    raw = [[p["lon"], p["lat"]] + ([p["ele"]] if p["ele"] is not None else []) for p in trkpts]
+    simp = rdp(raw, 0.00004)
+
+    name = gpx_ext.get("name") or os.path.splitext(os.path.basename(path))[0]
+    desc = gpx_ext.get("description") or ""
+    tags = [t for t in re.split(r"[,，、\s]+", gpx_ext.get("TrackTags", "")) if t]
+    region = (gpx_ext.get("PosStartName") or "").replace("金华市", "") or None
+    if region and region not in COUNTY_CENTERS:
+        region = None
+    if not region:
+        # 兜底：离轨迹起点最近的金华县市中心
+        region = min(COUNTY_CENTERS, key=lambda k: haversine(
+            trkpts[0]["lat"], trkpts[0]["lon"], *COUNTY_CENTERS[k]))
+        region_source = "按起点坐标就近归类（近似）"
+    else:
+        region_source = "两步路 PosStartName"
+
+    dist_km = round(dist, 2)
+    asc_m = round(ascent)
+    hours = round(dur_s / 3600, 2) if dur_s else None
+
+    # 难度：距离 + 累计爬升的透明规则，UI 里会写明依据
+    if dist_km <= 8 and asc_m <= 400:
+        difficulty, diff_reason = "休闲", "≤8km 且爬升≤400m"
+    elif dist_km <= 15 and asc_m <= 900:
+        difficulty, diff_reason = "中等", "≤15km 且爬升≤900m"
+    else:
+        difficulty, diff_reason = "困难", "距离>15km 或爬升>900m"
+
+    family_hi = (dist_km <= 8 and asc_m <= 400 and (hours is None or hours <= 5))
+    family = True if family_hi else (None if (dist_km > 12 or asc_m > 700) else None)
+
+    blob = desc + " " + " ".join(w["name"] + w["desc"] for w in wpts) + " " + " ".join(tags)
+    has_water = True if any(k in blob for k in WATER_KEYS) else None
+    family_tag = True if any(k in blob for k in FAMILY_KEYS) else None
+    if family_tag:
+        family = True
+
+    annotations = [{
+        "lon": w["lon"], "lat": w["lat"], "name": w["name"],
+        "desc": w["desc"], "ele": w["ele"], "time": w["time"],
+    } for w in wpts if w["name"] or w["desc"]]
+
+    # 高程剖面：按轨迹点序号等步长抽稀，但最高/最低点必须保住。
+    # 等步长会漏掉真正的极值点，剖面上标的峰值就会和 ele_max 差一两米 —— 两处数字对不上。
+    prof = [[round(i * dist_km / max(1, len(trkpts) - 1), 3), round(p["ele"], 1)]
+            for i, p in enumerate(trkpts) if p["ele"] is not None]
+    elevation_profile = None
+    if prof:
+        top = max(prof, key=lambda d: d[1])
+        bottom = min(prof, key=lambda d: d[1])
+        thin = prof[:: max(1, len(prof) // 240)]
+        for ext in (top, bottom):
+            if ext not in thin:
+                thin.append(ext)
+        thin.sort(key=lambda d: d[0])
+        elevation_profile = thin
+
+    return {
+        "id": "tb_" + (gpx_ext.get("TrackId") or re.sub(r"\W+", "_", name)),
+        "name": name,
+        "region": region,
+        "region_source": region_source,
+        "difficulty": difficulty,
+        "difficulty_reason": diff_reason,
+        "family": family,
+        "family_reason": ("距离≤8km、爬升≤400m、用时≤5h（系统判定）" if family_hi else None),
+        "family_tag": family_tag,
+        "has_water": has_water,
+        "water_reason": ("轨迹描述或标注点提到：" + "、".join(
+            k for k in WATER_KEYS if k in blob) if has_water else None),
+        "distance_km": dist_km,
+        "ascent_m": asc_m,
+        "descent_m": round(descent),
+        "ele_min": round(min(eles)) if eles else None,
+        "ele_max": round(max(eles)) if eles else None,
+        "hours": hours,
+        "pause_hours": round(pause_s / 3600, 2) if pause_s else None,
+        "track_points": len(trkpts),
+        "waypoints": len(wpts),
+        "start": {"lon": trkpts[0]["lon"], "lat": trkpts[0]["lat"]},
+        "end": {"lon": trkpts[-1]["lon"], "lat": trkpts[-1]["lat"]},
+        "tags": tags,
+        "description": desc,
+        "annotations": annotations,
+        # 来源与版权：原作者信息必须一路带到界面上
+        "source": {
+            "provider": "两步路(2bulu)",
+            "track_id": gpx_ext.get("TrackId"),
+            "creator": gpx_ext.get("CreaterName"),
+            "creator_id": gpx_ext.get("CreaterId"),
+            "app_version": gpx_ext.get("ProductVersion"),
+            "begin_time": gpx_ext.get("BeginTime"),
+            "file": os.path.basename(path),
+        },
+        "geometry": {"type": "LineString", "coordinates": simp},
+        "elevation_profile": elevation_profile,
+    }
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--src", default=os.path.join(ROOT, "gpx"))
+    ap.add_argument("--out", default=os.path.join(ROOT, "data"))
+    args = ap.parse_args()
+
+    files = sorted(f for f in os.listdir(args.src) if f.lower().endswith(".gpx"))
+    if not files:
+        print("gpx 目录里没有 .gpx 文件：", args.src)
+        return 1
+
+    routes, feats, bad = [], [], []
+    for f in files:
+        try:
+            r = parse_gpx(os.path.join(args.src, f))
+        except Exception as e:  # noqa: BLE001
+            bad.append((f, repr(e)))
+            continue
+        feats.append({
+            "type": "Feature",
+            "properties": {k: v for k, v in r.items()
+                           if k not in ("geometry", "elevation_profile", "annotations")},
+            "geometry": r["geometry"],
+        })
+        routes.append(r)
+        print("%-28s %6.2f km  爬升%5dm  用时%-6s %s / %s" % (
+            r["name"], r["distance_km"], r["ascent_m"],
+            r["hours"] if r["hours"] else "-", r["region"], r["difficulty"]))
+
+    os.makedirs(args.out, exist_ok=True)
+    with open(os.path.join(args.out, "routes.json"), "w", encoding="utf-8") as fp:
+        json.dump({
+            "generated_from": "两步路 GPX 导出",
+            "count": len(routes),
+            "routes": routes,
+        }, fp, ensure_ascii=False, indent=1)
+    with open(os.path.join(args.out, "routes.geojson"), "w", encoding="utf-8") as fp:
+        json.dump({"type": "FeatureCollection", "features": feats}, fp, ensure_ascii=False)
+    # 同时产出一份 JS，页面用 <script> 直接吃，避免 file:// 下 fetch 被拦
+    with open(os.path.join(args.out, "routes.js"), "w", encoding="utf-8") as fp:
+        fp.write("window.HIKE_DATA = ")
+        json.dump({
+            "generated_from": "两步路 GPX 导出",
+            "count": len(routes),
+            "routes": routes,
+        }, fp, ensure_ascii=False)
+        fp.write(";\n")
+
+    print("\n生成 %d 条 -> data/routes.json + data/routes.geojson" % len(routes))
+    for f, e in bad:
+        print("跳过(解析失败): %s %s" % (f, e))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

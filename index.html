@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>金华徒步路线 · Demo</title>
+<link rel="stylesheet" href="vendor/maplibre-gl.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="map"></div>
+
+<!-- 顶部筛选条 -->
+<header class="bar">
+  <div class="brand">
+    <span class="dot"></span>
+    <b>金华徒步路线</b>
+    <span class="sub">数据源：两步路用户上传轨迹</span>
+  </div>
+
+  <div class="filters">
+    <div class="fg" id="fg-region">
+      <label>区域</label>
+      <div class="chips" data-group="region"></div>
+    </div>
+
+    <div class="fg" id="fg-diff">
+      <label>难度</label>
+      <div class="chips" data-group="difficulty"></div>
+    </div>
+
+    <div class="fg">
+      <label>距离</label>
+      <select id="f-dist">
+        <option value="all">全部</option>
+        <option value="s">≤ 8 km</option>
+        <option value="m">8 – 15 km</option>
+        <option value="l">&gt; 15 km</option>
+      </select>
+    </div>
+
+    <div class="fg toggles">
+      <label class="tg"><input type="checkbox" id="f-family"><span>亲子</span></label>
+      <label class="tg"><input type="checkbox" id="f-water"><span>涉水 / 瀑布</span></label>
+      <label class="tg"><input type="checkbox" id="f-wpt" checked><span>沿途标注点</span></label>
+    </div>
+
+    <div class="fg grow">
+      <label>搜索</label>
+      <input id="f-q" type="search" placeholder="路线名 / 描述 / 标注点，如：瀑布、古道">
+    </div>
+
+    <div class="fg">
+      <label>排序</label>
+      <select id="f-sort">
+        <option value="distance">距离</option>
+        <option value="ascent">爬升</option>
+        <option value="name">名称</option>
+      </select>
+    </div>
+
+    <button id="btn-reset" class="ghost">重置</button>
+    <button id="btn-import" class="primary">导入 GPX</button>
+    <input type="file" id="file-input" accept=".gpx" multiple hidden>
+  </div>
+
+  <div class="base-switch" id="base-switch">
+    <button data-base="liberty" class="on">简洁</button>
+    <button data-base="topo">地形等高线</button>
+    <button data-base="sat">卫星</button>
+  </div>
+</header>
+
+<!-- 右侧列表 / 详情 -->
+<aside id="panel">
+  <div class="panel-head">
+    <button id="btn-back" class="back" hidden>‹ 返回列表</button>
+    <div class="cnt"><b id="cnt-hit">0</b><span id="cnt-all">/ 0 条路线</span></div>
+  </div>
+  <div id="list" class="list"></div>
+  <div id="detail" class="detail" hidden></div>
+</aside>
+
+<!-- 图例 -->
+<div class="legend">
+  <div><i style="background:#059669"></i>休闲</div>
+  <div><i style="background:#d97706"></i>中等</div>
+  <div><i style="background:#b91c1c"></i>困难</div>
+  <div><i style="background:#0284c7"></i>起点</div>
+  <div><i style="background:#7c3aed;border-radius:2px"></i>沿途标注</div>
+  <div class="disc">难度＝系统按「距离＋累计爬升」判定，非两步路官方评级</div>
+</div>
+
+<div id="toast" class="toast" hidden></div>
+<div id="drop" class="drop" hidden><div>松手即导入 GPX 轨迹</div></div>
+
+<script src="vendor/maplibre-gl.js"></script>
+<script src="data/routes.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
