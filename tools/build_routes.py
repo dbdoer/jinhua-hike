@@ -67,12 +67,20 @@ def haversine(lat1, lon1, lat2, lon2):
     return 2 * R * math.asin(math.sqrt(a))
 
 
-def rdp(points, eps):
-    """Douglas-Peucker 抽稀，points = [[lon,lat,ele?], ...]"""
+def rdp(points, eps, must_keep=()):
+    """Douglas-Peucker 抽稀，points = [[lon,lat,ele?], ...]
+
+    must_keep: 必须保留的点下标。用来强行保住最高/最低点——
+    前端是从几何坐标现算海拔剖面的，少了这两个点，图上的峰值
+    就会低于 ele_max，两处数字对不上。
+    """
     if len(points) < 3:
         return points
     keep = [False] * len(points)
     keep[0] = keep[-1] = True
+    for i in must_keep:
+        if 0 <= i < len(points):
+            keep[i] = True
     stack = [(0, len(points) - 1)]
     while stack:
         i0, i1 = stack.pop()
@@ -171,9 +179,15 @@ def parse_gpx(path):
         dur_s = float(gpx_ext["TimeUsed"]) / 1000.0
     pause_s = float(gpx_ext["PauseTime"]) / 1000.0 if gpx_ext.get("PauseTime") else None
 
-    # 抽稀（约 4m 容差）
+    # 抽稀（约 4m 容差）。最高/最低点强制保留：前端从几何现算剖面，
+    # 这两个点不在几何里，剖面峰值就会低于 ele_max。
     raw = [[p["lon"], p["lat"]] + ([p["ele"]] if p["ele"] is not None else []) for p in trkpts]
-    simp = rdp(raw, 0.00004)
+    forced = []
+    ele_idx = [(i, p["ele"]) for i, p in enumerate(trkpts) if p["ele"] is not None]
+    if ele_idx:
+        forced.append(max(ele_idx, key=lambda t: t[1])[0])
+        forced.append(min(ele_idx, key=lambda t: t[1])[0])
+    simp = rdp(raw, 0.00004, forced)
 
     name = gpx_ext.get("name") or os.path.splitext(os.path.basename(path))[0]
     desc = gpx_ext.get("description") or ""
@@ -215,20 +229,8 @@ def parse_gpx(path):
         "desc": w["desc"], "ele": w["ele"], "time": w["time"],
     } for w in wpts if w["name"] or w["desc"]]
 
-    # 高程剖面：按轨迹点序号等步长抽稀，但最高/最低点必须保住。
-    # 等步长会漏掉真正的极值点，剖面上标的峰值就会和 ele_max 差一两米 —— 两处数字对不上。
-    prof = [[round(i * dist_km / max(1, len(trkpts) - 1), 3), round(p["ele"], 1)]
-            for i, p in enumerate(trkpts) if p["ele"] is not None]
-    elevation_profile = None
-    if prof:
-        top = max(prof, key=lambda d: d[1])
-        bottom = min(prof, key=lambda d: d[1])
-        thin = prof[:: max(1, len(prof) // 240)]
-        for ext in (top, bottom):
-            if ext not in thin:
-                thin.append(ext)
-        thin.sort(key=lambda d: d[0])
-        elevation_profile = thin
+    # 高程剖面不再单独存：geometry 的坐标就是 [lon,lat,ele]，前端从它现算。
+    # 曾单独存一份 240 点的抽稀剖面（单条 1.6 KB gzip），等于把高程存了两遍。
 
     return {
         "id": "tb_" + (gpx_ext.get("TrackId") or re.sub(r"\W+", "_", name)),
@@ -268,7 +270,6 @@ def parse_gpx(path):
             "file": os.path.basename(path),
         },
         "geometry": {"type": "LineString", "coordinates": simp},
-        "elevation_profile": elevation_profile,
     }
 
 
@@ -293,7 +294,7 @@ def main():
         feats.append({
             "type": "Feature",
             "properties": {k: v for k, v in r.items()
-                           if k not in ("geometry", "elevation_profile", "annotations")},
+                           if k not in ("geometry", "annotations")},
             "geometry": r["geometry"],
         })
         routes.append(r)

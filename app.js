@@ -411,8 +411,32 @@ function copy(t) {
     () => toast('已复制：' + t), () => toast('复制失败，手动选一下吧：' + t));
 }
 
+/* 海拔剖面：不再单独存一份高程，直接从 geometry 坐标的第三位 [lng,lat,ele] 现算。
+   两个口径上的讲究，都是为了让图上的数字跟上方网格对得上：
+
+   1) 横轴按 r.distance_km / 几何总长 的比例拉回真值。几何是 RDP 抽稀过的
+      （真实轨迹 ~1100 点 -> ~280 点），逐段累加会短 0.8~1.8%（实测：洪武古道
+      12.17 -> 11.96 km）。不拉的话，图右上角写「12.0 km」而网格里写「12.18 km」，
+      同一屏两个数，用户会以为哪个是错的。
+   2) 纵轴的峰值靠 tools/build_routes.py 抽稀时强制保留最高/最低点来保证，
+      否则图上的峰顶会低于 ele_max 一两米。 */
+function profileFromGeometry(r) {
+  const c = (r.geometry && r.geometry.coordinates) || [];
+  if (c.length < 3) return null;
+  const out = [];
+  let d = 0;
+  for (let i = 0; i < c.length; i++) {
+    if (i) d += hav({ lon: c[i - 1][0], lat: c[i - 1][1] }, { lon: c[i][0], lat: c[i][1] });
+    if (c[i].length > 2 && c[i][2] != null) out.push([d, c[i][2]]);
+  }
+  if (out.length < 3) return null;
+  const total = out[out.length - 1][0];
+  const k = total > 1e-6 && r.distance_km ? r.distance_km / total : 1;
+  return k === 1 ? out : out.map(x => [x[0] * k, x[1]]);
+}
+
 function profileSVG(r) {
-  const p = r.elevation_profile;
+  const p = profileFromGeometry(r);
   if (!p || p.length < 3) return '';
   const W = 344, H = 96, PL = 34, PR = 8, PT = 10, PB = 16;
   const xs = p.map(d => d[0]), ys = p.map(d => d[1]);
@@ -665,8 +689,20 @@ function parseGpxText(text, filename) {
   const blob = desc + ' ' + wpts.map(w => w.name).join(' ') + ' ' + tags.join(' ');
   const water = ['瀑布', '溪', '涧', '水潭', '深潭', '水源', '涉水'].some(k => blob.includes(k));
 
-  // 抽稀（约 4m 容差）
-  const coords = rdp(trkpts.map(p => [p.lon, p.lat]), 0.00004);
+  // 抽稀（约 4m 容差）。坐标必须写成 [lon,lat,ele] 三元组 —— 海拔要在几何里，
+  // 否则前端画不出剖面（这里原先只存了 [lon,lat]，与 build_routes.py 口径不一致）。
+  // 最高/最低点强制保留，保证剖面峰值等于 ele_max。
+  const forced = [];
+  let hi = -1, lo = -1;
+  trkpts.forEach((p, i) => {
+    if (p.ele == null) return;
+    if (hi < 0 || p.ele > trkpts[hi].ele) hi = i;
+    if (lo < 0 || p.ele < trkpts[lo].ele) lo = i;
+  });
+  if (hi >= 0) forced.push(hi);
+  if (lo >= 0) forced.push(lo);
+  const coords = rdp(trkpts.map(p => (p.ele == null ? [p.lon, p.lat] : [p.lon, p.lat, p.ele])),
+    0.00004, forced);
   // id 规则必须和 tools/build_routes.py 一致，否则同一份 GPX 导两次会变成两条
   const id = 'tb_' + (ext.TrackId || name.replace(/[^\p{L}\p{N}_]+/gu, '_'));
 
@@ -691,19 +727,6 @@ function parseGpxText(text, filename) {
       app_version: ext.ProductVersion || null, begin_time: ext.BeginTime || null, file: filename,
     },
     geometry: { type: 'LineString', coordinates: coords },
-    // 高程剖面与 tools/build_routes.py 同口径：等步长抽稀，但最高/最低点保住
-    elevation_profile: (() => {
-      const prof = trkpts.map((p, i) => (p.ele == null ? null
-        : [+(i * distKm / Math.max(1, trkpts.length - 1)).toFixed(3), +p.ele.toFixed(1)])).filter(Boolean);
-      if (!prof.length) return null;
-      const thin = prof.filter((_, i) => i % Math.max(1, Math.floor(prof.length / 240)) === 0);
-      for (const ext of [prof.reduce((a, b) => (b[1] > a[1] ? b : a), prof[0]),
-        prof.reduce((a, b) => (b[1] < a[1] ? b : a), prof[0])]) {
-        if (!thin.includes(ext)) thin.push(ext);
-      }
-      thin.sort((a, b) => a[0] - b[0]);
-      return thin;
-    })(),
     imported: true,
   };
 }
@@ -715,10 +738,12 @@ function hav(a, b) {
   return 2 * R * Math.asin(Math.sqrt(x));
 }
 
-function rdp(points, eps) {
+function rdp(points, eps, mustKeep) {
   if (points.length < 3) return points;
   const keep = new Array(points.length).fill(false);
   keep[0] = keep[points.length - 1] = true;
+  // mustKeep：必须保留的点下标（用来锁住最高/最低点，与 build_routes.py 同口径）
+  if (mustKeep) for (const i of mustKeep) if (i >= 0 && i < points.length) keep[i] = true;
   const stack = [[0, points.length - 1]];
   while (stack.length) {
     const [i0, i1] = stack.pop();
