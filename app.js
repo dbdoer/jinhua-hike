@@ -22,6 +22,21 @@ const state = {
 };
 let lastRegionSig = '';
 
+/* ------------------------- 管理通道（导入 GPX） -------------------------
+   访客看不到导入入口。说清楚，这不是权限控制 —— 静态站没有服务端，前端任何
+   开关都能被查看源码、改一行 JS 绕过。真正的守卫是 GitHub 仓库的写权限：
+   只有 push 进仓库的路线才会出现在所有人面前。访客即使真调用了导入，
+   结果也只活在他自己浏览器的内存里，刷新即消失，不上传、别人看不到。
+
+   开启：带 ?admin=1 打开一次，本机记住；?admin=0 关掉。 */
+const ADMIN_KEY = 'jinhua-hike-admin';
+const isAdmin = (() => {
+  const q = new URLSearchParams(location.search).get('admin');
+  if (q === '1') { try { localStorage.setItem(ADMIN_KEY, '1'); } catch (_) { /* 隐私模式下忽略 */ } return true; }
+  if (q === '0') { try { localStorage.removeItem(ADMIN_KEY); } catch (_) { } return false; }
+  try { return localStorage.getItem(ADMIN_KEY) === '1'; } catch (_) { return false; }
+})();
+
 /* ----------------------------- 地图 ----------------------------- */
 const map = new maplibregl.Map({
   container: 'map',
@@ -223,12 +238,17 @@ function refresh() {
 function renderList(list) {
   const box = document.getElementById('list');
   if (!list.length) {
-    box.innerHTML = `<div class="empty">
-      没有匹配的路线。<br><br>
-      当前数据集共 <b>${routes.length}</b> 条，全部来自两步路 GPX 导出——
-      两步路没有开放 API，想加路线就导出 GPX 再丢进来。<br><br>
-      点右上角 <code>导入 GPX</code>，或者直接把 .gpx 文件拖到页面上。
-    </div>`;
+    box.innerHTML = isAdmin
+      ? `<div class="empty">
+           没有匹配的路线。<br><br>
+           当前数据集共 <b>${routes.length}</b> 条。加新路线：把两步路导出的 GPX 丢进
+           <code>gpx/</code>，跑 <code>python tools/build_routes.py</code> 再 push。<br><br>
+           或者点右上角 <code>导入 GPX</code> 先看一眼效果 —— 只在本机内存里，刷新即消失。
+         </div>`
+      : `<div class="empty">
+           没有匹配的路线。<br><br>
+           当前数据集共 <b>${routes.length}</b> 条，全部来自两步路用户上传的轨迹。
+         </div>`;
     return;
   }
   box.innerHTML = list.map(r => {
@@ -596,27 +616,41 @@ function bindMapEvents() {
   map.on('mouseleave', 'anno-dot', () => { map.getCanvas().style.cursor = ''; });
 }
 
-/* --------------------------- 导入 GPX --------------------------- */
-document.getElementById('btn-import').onclick = () => document.getElementById('file-input').click();
-document.getElementById('file-input').onchange = e => {
-  importFiles([...e.target.files]);
-  e.target.value = '';
-};
+/* --------------------------- 导入 GPX（仅管理通道） --------------------------- */
+const btnImport = document.getElementById('btn-import');
+if (isAdmin) {
+  btnImport.hidden = false;
+  btnImport.title = '管理通道：导入只在本机内存里，不会上传';
+  btnImport.onclick = () => document.getElementById('file-input').click();
+  document.getElementById('file-input').onchange = e => {
+    importFiles([...e.target.files]);
+    e.target.value = '';
+  };
+} else {
+  btnImport.remove();
+  document.getElementById('file-input').remove();
+}
 
 // 拖放导入：用计数器判断是否真的离开了窗口，别用 relatedTarget（不可靠）
 let dragDepth = 0;
 const dropEl = document.getElementById('drop');
+// 不管是不是管理员都要 preventDefault：不然访客往页面里拖个文件，
+// 浏览器会直接跳走打开那个文件，地图就没了。
 window.addEventListener('dragenter', e => {
-  e.preventDefault(); dragDepth++; dropEl.hidden = false;
+  e.preventDefault();
+  if (!isAdmin) return;
+  dragDepth++; dropEl.hidden = false;
 });
 window.addEventListener('dragover', e => { e.preventDefault(); });
 window.addEventListener('dragleave', e => {
   e.preventDefault();
+  if (!isAdmin) return;
   dragDepth = Math.max(0, dragDepth - 1);
   if (!dragDepth) dropEl.hidden = true;
 });
 window.addEventListener('drop', e => {
   e.preventDefault();
+  if (!isAdmin) return;
   dragDepth = 0; dropEl.hidden = true;
   importFiles([...(e.dataTransfer?.files || [])].filter(f => /\.gpx$/i.test(f.name)));
 });

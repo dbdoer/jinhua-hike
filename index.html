@@ -66,7 +66,8 @@
     </div>
 
     <button id="btn-reset" class="ghost adv">重置</button>
-    <button id="btn-import" class="primary"><span class="only-wide">导入 GPX</span><span class="only-narrow">导入</span></button>
+    <!-- 导入仅管理通道可见：默认 hidden，?admin=1 打开后由 app.js 显出来 -->
+    <button id="btn-import" class="primary" hidden><span class="only-wide">导入 GPX</span><span class="only-narrow">导入</span></button>
     <input type="file" id="file-input" accept=".gpx" multiple hidden>
   </div>
 
