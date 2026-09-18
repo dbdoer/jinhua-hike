@@ -1,0 +1,399 @@
+{
+ "note": "gpx/ 里原始 GPX 文件的字节指纹。任何一项对不上，都意味着「下载原始 GPX」给出去的已经不是上传者导出的那串字节。.gitattributes 里 *.gpx 标了 -text，禁止 git 做行尾转换 —— 别去掉它。用 python tools/check_gpx_manifest.py 校验。",
+ "algorithm": "sha256",
+ "count": 56,
+ "files": [
+  {
+   "file": "三县第一潭三瀑.gpx",
+   "bytes": 96019,
+   "sha256": "ba2f74e5ad0e642fe4f3c13270cb7deec3b0156210c3f88e34e943e356f901e2",
+   "track_id": "88232643",
+   "name": "三县第一潭（三瀑）"
+  },
+  {
+   "file": "三峰尖小环线.gpx",
+   "bytes": 103172,
+   "sha256": "ff70b72a4932d628cbcc6076f20a0818485f6806478c01d821f30bc082c6893c",
+   "track_id": "89472609",
+   "name": "三峰尖小环线"
+  },
+  {
+   "file": "东山玻璃栈道260415.gpx",
+   "bytes": 67354,
+   "sha256": "365c1474603e7eb63d496d8222e041e22b268da5242e3c0c2f8b4e64be9352af",
+   "track_id": "82270797",
+   "name": "东山玻璃栈道260415"
+  },
+  {
+   "file": "义乌千丈岩瀑布.gpx",
+   "bytes": 41354,
+   "sha256": "db5ae1ab2d8b83ca419b7c095d3cfd6bff2621076553348e724aecdb6ab42ff8",
+   "track_id": "88756320",
+   "name": "义乌千丈岩瀑布"
+  },
+  {
+   "file": "义乌岩下瀑布.gpx",
+   "bytes": 36255,
+   "sha256": "60c83a8557423001ac1cf7c46d10541e54ee3282e4b972cecff0ae781d0b6cda",
+   "track_id": "88427238",
+   "name": "义乌岩下瀑布"
+  },
+  {
+   "file": "乌牛栈道260212.gpx",
+   "bytes": 79836,
+   "sha256": "3b1f867908be7d7872240329d15e9454ef634514a49d15c59d48dbf439f35919",
+   "track_id": "79714442",
+   "name": "乌牛栈道260212"
+  },
+  {
+   "file": "乌珠岭脚钟潭260329.gpx",
+   "bytes": 112841,
+   "sha256": "ca446875bd795dab65789b6c1c3256095cae736c6655df4a7a52330945561738",
+   "track_id": "81298311",
+   "name": "乌珠岭脚钟潭260329"
+  },
+  {
+   "file": "九峰山环线.gpx",
+   "bytes": 50193,
+   "sha256": "af56ab6686abd9a1afb79786d4875f2ef4d421e52778cc25e00a101ce39d79a5",
+   "track_id": "89863284",
+   "name": "九峰山环线"
+  },
+  {
+   "file": "仰天垄260527.gpx",
+   "bytes": 99761,
+   "sha256": "e9177711fa7cfec3c4feaedeeffee46391bac015c6141fed9b1723e34d8c9c2e",
+   "track_id": "84917515",
+   "name": "仰天垄260527"
+  },
+  {
+   "file": "兰溪三峰尖.gpx",
+   "bytes": 157155,
+   "sha256": "cbc148585307df6ce9e66e08b5298833cc35653afdf6dad5b619cb5b210c77ff",
+   "track_id": "88940116",
+   "name": "兰溪三峰尖"
+  },
+  {
+   "file": "兰溪铁甲山260614.gpx",
+   "bytes": 151857,
+   "sha256": "6aaf2ab3242f176d57a4c82b5db8e2cfe8d555e039da57012ab32bc5f2db8cb4",
+   "track_id": "85908276",
+   "name": "兰溪铁甲山260614"
+  },
+  {
+   "file": "兰溪龙门瀑布.gpx",
+   "bytes": 22147,
+   "sha256": "bfe465f4607d8137988384c6f7a27b77171bd15a022de3af18eac70a474479af",
+   "track_id": "88749484",
+   "name": "兰溪龙门瀑布"
+  },
+  {
+   "file": "北山清风寨260322.gpx",
+   "bytes": 83398,
+   "sha256": "95cbbac11cca7ea2fc6556cbcec450dbca5160c840195f66e0707115351bdc98",
+   "track_id": "80841303",
+   "name": "北山清风寨260322"
+  },
+  {
+   "file": "北山第一瀑石佛大盘尖.gpx",
+   "bytes": 169314,
+   "sha256": "8bf5a28f10e7ffe08095b76f1fe9e45d346b5558326d110574b12518a3c4a45f",
+   "track_id": "89209882",
+   "name": "北山第一瀑石佛大盘尖"
+  },
+  {
+   "file": "华溪森林公园.gpx",
+   "bytes": 135424,
+   "sha256": "f5c9f522648071e50d725cc48d6a2ee1c1fefb84990e7a1822352e0c89ef6e10",
+   "track_id": "86662728",
+   "name": "华溪森林公园"
+  },
+  {
+   "file": "四顾屏260304.gpx",
+   "bytes": 128779,
+   "sha256": "2dc9494a8f444ae8abdacc2eaf0f993e56a935e6b4d06f9720e2db769967f75e",
+   "track_id": "79831223",
+   "name": "四顾屏260304"
+  },
+  {
+   "file": "四顾屏南线上干口游步道260520.gpx",
+   "bytes": 77177,
+   "sha256": "87e91a0c24c23fff37ee6060da5e1a18ee720f667e5a0cfa679f7614af7507c2",
+   "track_id": "84518606",
+   "name": "四顾屏南线（上干口游步道）260520"
+  },
+  {
+   "file": "塔石上南坑双福瀑布.gpx",
+   "bytes": 37238,
+   "sha256": "c5484a5176a6396ede775c27db6904f41be3e65ecd88db5e355013a15d491148",
+   "track_id": "87383393",
+   "name": "塔石上南坑双福瀑布"
+  },
+  {
+   "file": "塔石上南坑龙潭瀑布.gpx",
+   "bytes": 18853,
+   "sha256": "e2cc94413f8e7fac85f707e2fed67e7146da2d6808d9b8d4c95f6f5d84f725e3",
+   "track_id": "87383268",
+   "name": "塔石上南坑龙潭瀑布"
+  },
+  {
+   "file": "塔石余仓瀑布260619.gpx",
+   "bytes": 45000,
+   "sha256": "0058250b8beb19aca7b68138c65c6369c8186f111ce73652055deb10afe79988",
+   "track_id": "86081048",
+   "name": "塔石余仓瀑布260619"
+  },
+  {
+   "file": "大寒尖羊印环线.gpx",
+   "bytes": 180967,
+   "sha256": "9ca6b7b64defa675d073868e390e49f97e6a1a0b1248140148ed5d4cfba344b0",
+   "track_id": "88541739",
+   "name": "大寒尖羊印环线"
+  },
+  {
+   "file": "大盘尖小环线260519.gpx",
+   "bytes": 85007,
+   "sha256": "65378a1aab8d2e1c3419cfd62ad141e61655dd62e2b03edc6097951ac183098d",
+   "track_id": "84478121",
+   "name": "大盘尖小环线260519"
+  },
+  {
+   "file": "安地石人山260504.gpx",
+   "bytes": 110416,
+   "sha256": "1c9beee2821908063463196bd04fca58c24f61dc89be404eb913d4c4403a5152",
+   "track_id": "85307589",
+   "name": "安地石人山260504"
+  },
+  {
+   "file": "官岩山飞鹰道260610.gpx",
+   "bytes": 69196,
+   "sha256": "401a3e1df60f66496e875757744aab622701119eb57fbb3d13e00906be063a72",
+   "track_id": "85607448",
+   "name": "官岩山飞鹰道260610"
+  },
+  {
+   "file": "尖峰山野路260208.gpx",
+   "bytes": 74258,
+   "sha256": "310339ee6b97aeaa1085a1594a287f51dbf17bfe6d8c531c01dbb6354d3d9c7c",
+   "track_id": "79714693",
+   "name": "尖峰山野路260208"
+  },
+  {
+   "file": "山后胡大寒尖看雾凇260201.gpx",
+   "bytes": 120761,
+   "sha256": "c364613a9a7af746eedcad736005f0994aab7a54b46a2dc9a482da0004c583d1",
+   "track_id": "79714604",
+   "name": "山后胡大寒尖看雾凇260201"
+  },
+  {
+   "file": "德胜岩济公寺.gpx",
+   "bytes": 129005,
+   "sha256": "8a2cd3f7b84e4e3ffd2fc7d633c903876ec14d5e209dc778e48824a0ef743b01",
+   "track_id": "88320950",
+   "name": "德胜岩济公寺"
+  },
+  {
+   "file": "摇石里瀑布小环.gpx",
+   "bytes": 149750,
+   "sha256": "0e0490da055f95a91e4773ae1c4f0865e1e1403fb16cc59c438201926c9be5fb",
+   "track_id": "87392239",
+   "name": "摇石里瀑布小环"
+  },
+  {
+   "file": "新岭古道反穿260426.gpx",
+   "bytes": 71158,
+   "sha256": "21754dc7667b82d31c98354f30ef82d1dc78e020a4b56179b80b7f129a85cae8",
+   "track_id": "83021016",
+   "name": "新岭古道反穿260426"
+  },
+  {
+   "file": "松瀑山260531.gpx",
+   "bytes": 143648,
+   "sha256": "3ad64f39d2083542055a4b582cc295d13264731ea44db3c4f830d69591299285",
+   "track_id": "85028885",
+   "name": "松瀑山260531"
+  },
+  {
+   "file": "武义清风寨260513.gpx",
+   "bytes": 88966,
+   "sha256": "442fa50166b68fec9f9ae4eb72abb81449a57fffb86354491baa8af0a6f39eca",
+   "track_id": "84143816",
+   "name": "武义清风寨260513"
+  },
+  {
+   "file": "武义白坛岩260204.gpx",
+   "bytes": 148062,
+   "sha256": "4b0732ff9b6994d85b812964d398d5eda318dd6f04678183674211fe8de4589f",
+   "track_id": "79714563",
+   "name": "武义白坛岩260204"
+  },
+  {
+   "file": "武义石脸盆.gpx",
+   "bytes": 118544,
+   "sha256": "fda4cc98bf995f8796dd8de5900466c290624a063d625eb11bfedbcf0339b945",
+   "track_id": "86230249",
+   "name": "武义石脸盆"
+  },
+  {
+   "file": "武义石鹅湖260125.gpx",
+   "bytes": 116701,
+   "sha256": "acc098326b2bbb21b547f0aebe63339680a3b5a6c224aef77ed3601129f48a12",
+   "track_id": "78360523",
+   "name": "武义石鹅湖260125"
+  },
+  {
+   "file": "永康九泄潭.gpx",
+   "bytes": 124537,
+   "sha256": "f284eff0f1578481e4f11e384d2652fa5ea42d99acb91ee973e7dffe3a3042e2",
+   "track_id": "87690118",
+   "name": "永康九泄潭"
+  },
+  {
+   "file": "永康灵岩瀑布.gpx",
+   "bytes": 38638,
+   "sha256": "88149402eb6b776347a67c9d89bb3151ee2c1f4cd81353d0b98bcf5c9250aab9",
+   "track_id": "89001980",
+   "name": "永康灵岩瀑布"
+  },
+  {
+   "file": "洪武古道260219.gpx",
+   "bytes": 240720,
+   "sha256": "fe8a83712dfd417b7148669c2c2830a762f7c4194c6c36f3e6b991e628443d65",
+   "track_id": "79714293",
+   "name": "洪武古道260219"
+  },
+  {
+   "file": "浦江大楼瀑布.gpx",
+   "bytes": 11344,
+   "sha256": "ea2de2d9ae9bfcd3f32bc91a599eab66a934bcc4238a7e282d379d21903d7a63",
+   "track_id": "88228835",
+   "name": "浦江大楼瀑布"
+  },
+  {
+   "file": "浦江通济湖260118.gpx",
+   "bytes": 69354,
+   "sha256": "f1e3808bf8b7bc16d5cc25e43a906746d1acf049e87771aa57c6fe9a01f2ceab",
+   "track_id": "78007335",
+   "name": "浦江通济湖260118"
+  },
+  {
+   "file": "灶头大盘尖260121.gpx",
+   "bytes": 223002,
+   "sha256": "a419df990fbc8923704d46ba522bb3d5bfd8b4d1fb0c1cbbf3268e0789147dd9",
+   "track_id": "78185877",
+   "name": "灶头大盘尖260121"
+  },
+  {
+   "file": "琅峰山260517.gpx",
+   "bytes": 153174,
+   "sha256": "5a231e04e1624ea8e93ae4b75324909f5ab97c51fd6191edccccbf8ae7db9707",
+   "track_id": "84376710",
+   "name": "琅峰山260517"
+  },
+  {
+   "file": "白水脚瀑布260509.gpx",
+   "bytes": 32901,
+   "sha256": "0be6a03c5f83776df1581f171b7626c453c0eec105a56f46b83215c0e9829c14",
+   "track_id": "83904196",
+   "name": "白水脚瀑布260509"
+  },
+  {
+   "file": "白石湾用反向导航.gpx",
+   "bytes": 80295,
+   "sha256": "8744043453bd8ddd04303347cc92cc83bd69f78b2db57c11196ef0d5e030ce46",
+   "track_id": "82791833",
+   "name": "白石湾（用反向导航）"
+  },
+  {
+   "file": "皮子源燕子洞.gpx",
+   "bytes": 42697,
+   "sha256": "5daefca381c43d5eda9da5d8c218cbe157b3953821bd8b38369db102bf348b7b",
+   "track_id": "89111404",
+   "name": "皮子源燕子洞"
+  },
+  {
+   "file": "美女峰免费260524.gpx",
+   "bytes": 62542,
+   "sha256": "ac0e530276a25265bb4eb617bae804c734e2da23ed833e53fc67c040aba9e0cc",
+   "track_id": "84820479",
+   "name": "美女峰免费260524"
+  },
+  {
+   "file": "虎岩紫荆花260316.gpx",
+   "bytes": 247952,
+   "sha256": "cb40662e90f1b437aa59a9893d2e3c155b155e66b13dc15678ea0b644700290f",
+   "track_id": "80504553",
+   "name": "虎岩紫荆花260316"
+  },
+  {
+   "file": "转轮岩260325.gpx",
+   "bytes": 158914,
+   "sha256": "d7f815d12a0217391a5e377ff53b796d7876083a0edc1ebd1ba97aef9899ea81",
+   "track_id": "81027433",
+   "name": "转轮岩260325"
+  },
+  {
+   "file": "金兰古道260215.gpx",
+   "bytes": 180081,
+   "sha256": "f3697fca8c72d6ce529523604da19bd464fd300b6bfbf16d7f35d589d8db8b91",
+   "track_id": "79714391",
+   "name": "金兰古道260215"
+  },
+  {
+   "file": "金兰古道小环线260614.gpx",
+   "bytes": 169703,
+   "sha256": "bb51d2cefbcecbaae097a612a9ca120839f37bd673e54176f1d9fe3f13d0d188",
+   "track_id": "85871840",
+   "name": "金兰古道小环线260614"
+  },
+  {
+   "file": "金华南山四顾屏环线.gpx",
+   "bytes": 324112,
+   "sha256": "59eb71fc1f083f7360a0e6e12d734b1bc38bfb11da340918d75530b04b1dc01b",
+   "track_id": "63575934",
+   "name": "金华南山四顾屏环线"
+  },
+  {
+   "file": "金华慧明禅寺251228.gpx",
+   "bytes": 91101,
+   "sha256": "be0d2d9fc4a7e3f7900875fc4c2c9bb48d005daddd3b902369956caf6106ad71",
+   "track_id": "76847941",
+   "name": "金华慧明禅寺251228"
+  },
+  {
+   "file": "铁堰水库大佛寺260311.gpx",
+   "bytes": 115722,
+   "sha256": "5ff8ca9ab9385920b2534f798a4bd1fbfdb42fe144e4076d1b332b397ba37d3a",
+   "track_id": "80185317",
+   "name": "铁堰水库大佛寺260311"
+  },
+  {
+   "file": "霞客古道260604.gpx",
+   "bytes": 273879,
+   "sha256": "61897ad7fd6b11ba10edfb9577cffc05a8260785392c5c574d09676875bf0816",
+   "track_id": "85307203",
+   "name": "霞客古道260604"
+  },
+  {
+   "file": "高脊环线260225.gpx",
+   "bytes": 177666,
+   "sha256": "f081d2765bc23a69e8278346c93dd71cb2acd50e10bd66620926774d99a92704",
+   "track_id": "79714136",
+   "name": "高脊环线260225"
+  },
+  {
+   "file": "麻阳龙潭背260505.gpx",
+   "bytes": 244302,
+   "sha256": "50a77b6496a6a5f41e2ea2ab4c69f763b8819b6aa61427168700a6cc2eb59555",
+   "track_id": "83678408",
+   "name": "麻阳龙潭背260505"
+  },
+  {
+   "file": "龙头眼睛260427.gpx",
+   "bytes": 233497,
+   "sha256": "03b60e11c4fe8eb2c174d4dafeeacbc3bb67d152118211b5939f002b96a44fc6",
+   "track_id": "83107473",
+   "name": "龙头眼睛260427"
+  }
+ ]
+}

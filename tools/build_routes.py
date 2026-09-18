@@ -435,6 +435,19 @@ def main():
     print("\n生成 %d 条 -> data/routes.json + data/routes.geojson" % len(routes))
     for f, e in bad:
         print("跳过(解析失败): %s %s" % (f, e))
+
+    # 顺手核一遍 gpx/ 里原始文件的字节有没有被动过（清单 gpx/MANIFEST.json）。
+    # 站点上写着「下载原始 GPX」，所以这里必须比字节，光比「能不能打开」发现不了问题：
+    # 曾经 core.autocrlf 把 CRLF 压成 LF，文件小了 5164 字节，链接照样 200。
+    if os.path.abspath(args.src) == os.path.join(ROOT, "gpx"):
+        try:
+            from check_gpx_manifest import scan, load, compare  # 同目录，sys.path[0] 就是 tools/
+            if not compare(scan(), load(), quiet=True):
+                print("\n注意：gpx/ 里有文件的原始字节与 gpx/MANIFEST.json 不一致（见上）。")
+                print("      站点上「下载原始 GPX」给出去的已不是上传者导出的那份。")
+                print("      确认改动是有意的，再跑：python tools/check_gpx_manifest.py --write")
+        except ImportError:
+            pass
     return 0
 
 
