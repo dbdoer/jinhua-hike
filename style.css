@@ -68,6 +68,8 @@ button.primary:hover{background:#047857}
 .panel-head .cnt{font-size:12.5px;color:var(--ink2);margin-left:auto}
 .panel-head .cnt b{font-size:16px;color:var(--ink)}
 .back{border:none;padding:0;color:var(--green);font-size:13px}
+/* 窄屏专用：把面板收起来给地图腾地方（宽屏面板在右侧，用不着） */
+.collapse-toggle{display:none;border:none;padding:0 2px;margin-left:10px;color:var(--ink2);font-size:12.5px;white-space:nowrap}
 .list,.detail{overflow-y:auto;flex:1}
 .list{padding:10px}
 .card{
@@ -149,6 +151,11 @@ button.primary:hover{background:#047857}
   .bar.open .base-switch{display:flex;position:static;order:3}
   .only-wide{display:none}
   .only-narrow{display:inline}
-  #panel{top:auto;left:12px;right:12px;bottom:12px;width:auto;height:46%}
+  #panel{top:auto;left:12px;right:12px;bottom:12px;width:auto;height:46%;transition:height .22s ease}
+  /* 收起来只留标题条，给地图腾出整块地方 */
+  #panel.collapsed{height:48px}
+  #panel.collapsed .list,#panel.collapsed .detail{display:none}
+  #panel.collapsed .panel-head{border-bottom:none}
+  .collapse-toggle{display:inline-block}
   .legend{display:none}
 }

@@ -211,8 +211,13 @@ function fitPadding() {
   const top = (bar ? Math.round(bar.getBoundingClientRect().height) : 40) + 20;
   let p;
   if (window.matchMedia('(max-width: 900px)').matches) {
-    // 窄屏：面板贴在下方占约 46%
-    p = { top, bottom: Math.round(H * 0.5), left: 24, right: 24 };
+    // 窄屏：面板贴在下方，而且是可收起的 —— 按它实际占了多高来留白，
+    // 别写死 50% 视口，否则收起之后留白还照旧，等于白收。
+    const panel = document.getElementById('panel');
+    const bottom = panel
+      ? Math.round(H - panel.getBoundingClientRect().top + 16)
+      : Math.round(H * 0.5);
+    p = { top, bottom, left: 24, right: 24 };
   } else {
     const panel = document.getElementById('panel');
     p = {
@@ -233,6 +238,35 @@ function fitPadding() {
   }
   return p;
 }
+
+// 把镜头对准某条路线。留白一律走 fitPadding()，别再出现写死的数字。
+// maxZoom 只是防退化的护栏（bbox 缩成一个点之类）；实测真实路线选中时缩放落在 13.9~16.5。
+function fitToRoute(r, duration) {
+  map.fitBounds(boundsOf(r), { padding: fitPadding(), maxZoom: 17, duration: duration || 900 });
+}
+
+/* 窄屏：把面板收成一条，给地图腾地方。
+   收起来之后必须按新的可视区把已选路线重新摆一次 —— 否则路线还缩在上半屏，
+   底下空一大块，「腾地方」就白腾了。 */
+let collapseTimer = null;
+function setPanelCollapsed(collapsed) {
+  const panel = document.getElementById('panel');
+  if (panel.classList.contains('collapsed') === collapsed) return;
+  panel.classList.toggle('collapsed', collapsed);
+  const btn = document.getElementById('btn-collapse');
+  btn.textContent = collapsed ? '展开' : '收起';
+  btn.title = collapsed ? '展开面板' : '收起面板';
+  btn.setAttribute('aria-expanded', String(!collapsed));
+  const r = state.selected ? routes.find(x => x.id === state.selected) : null;
+  if (r) {
+    // 等高度过渡走完再量 fitPadding —— 量到中途尺寸会算歪
+    clearTimeout(collapseTimer);
+    collapseTimer = setTimeout(() => fitToRoute(r, 500), 260);
+  }
+}
+document.getElementById('btn-collapse').onclick = () => {
+  setPanelCollapsed(!document.getElementById('panel').classList.contains('collapsed'));
+};
 
 function refresh() {
   const list = filtered();
@@ -336,12 +370,9 @@ function select(id) {
     type: 'FeatureCollection',
     features: [{ type: 'Feature', properties: {}, geometry: r.geometry }],
   });
-  // 留白必须按屏幕实际算，别写死。原来这里是 { top:200, right:430, bottom:70, left:70 }，
-  // 那是给桌面右侧面板配的；窄屏（390px）下 right:430 把可用宽度压成 -110px，
-  // MapLibre 算不出可用区域，干脆一动不动 —— 手机上点列表里的路线，地图毫无反应。
-  // maxZoom 只是防退化的护栏（比如 bbox 缩成一个点）；实测所有真实路线
-  // 选中时的缩放落在 13.9~16.5，取 17 不会切到任何一条，别往下调。
-  map.fitBounds(boundsOf(r), { padding: fitPadding(), maxZoom: 17, duration: 900 });
+  // 留白必须按屏幕实际算，别写死：原来这里是 { top:200, right:430, bottom:70, left:70 }，
+  // 那是给桌面右侧面板配的，窄屏下把可用宽度压成负的，地图干脆不动。见 fitToRoute()。
+  fitToRoute(r, 900);
   renderDetail(r);
   refresh();
   if (state.wpt) {
@@ -352,6 +383,8 @@ function select(id) {
 
 function backToList() {
   state.selected = null;
+  // 收起状态下点「返回列表」得先把面板放出来，否则列表是隐藏的，用户对着一条空条发呆
+  setPanelCollapsed(false);
   map.getSource('sel').setData(emptyFC);
   document.getElementById('detail').hidden = true;
   document.getElementById('list').hidden = false;
