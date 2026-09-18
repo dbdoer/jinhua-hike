@@ -353,8 +353,11 @@ function renderDetail(r) {
 
     <h4>这条路线是什么样的</h4>
     <p>${r.description ? esc(r.description) : '<span style="color:#94a3b8">上传者没有写路线说明。</span>'}</p>
-    <div class="note">轨迹共 ${r.track_points} 个记录点，${anno.length} 个上传者标注点。用时含休息
-      ${r.pause_hours ? '（其中停留 ' + r.pause_hours + ' h）' : ''}。</div>
+    <div class="note">${r.geometry_from === 'rte'
+      ? `这是两步路的<b>路线</b>（计划轨迹），不是实际走过的记录：共 ${r.track_points} 个路线点、`
+        + `${anno.length} 个标注点。没有录制时间，所以用时一栏是空的。`
+      : `轨迹共 ${r.track_points} 个记录点，${anno.length} 个上传者标注点。用时含休息`
+        + `${r.pause_hours ? '（其中停留 ' + r.pause_hours + ' h）' : ''}。`}</div>
 
     <h4>沿途标注（上传者留的记号）</h4>
     ${anno.length ? anno.map((a, i) => `<div class="anno">
@@ -681,11 +684,20 @@ function parseGpxText(text, filename) {
   const ns = n => [...doc.getElementsByTagNameNS('*', n)];
   const txt = (el, n) => { const x = el.getElementsByTagNameNS('*', n)[0]; return x ? (x.textContent || '').trim() : null; };
 
-  const trkpts = ns('trkpt').map(p => ({
+  const readPts = tag => ns(tag).map(p => ({
     lat: +p.getAttribute('lat'), lon: +p.getAttribute('lon'),
     ele: txt(p, 'ele') ? +txt(p, 'ele') : null, time: txt(p, 'time'),
   })).filter(p => isFinite(p.lat) && isFinite(p.lon));
-  if (trkpts.length < 2) throw new Error('没有轨迹点');
+
+  // 两步路有时导出「路线」（<rte>/<rtept>，计划轨迹，没有录制时间）而不是「轨迹」。
+  // 与 build_routes.py 同口径：没有 trkpt 时退回 rtept，其余算法完全一致。
+  let trkpts = readPts('trkpt');
+  let geometryFrom = 'trk';
+  if (trkpts.length < 2) {
+    trkpts = readPts('rtept');
+    geometryFrom = 'rte';
+    if (trkpts.length < 2) throw new Error('没有轨迹点');
+  }
 
   const wpts = ns('wpt').map(p => ({
     lat: +p.getAttribute('lat'), lon: +p.getAttribute('lon'),
@@ -712,12 +724,17 @@ function parseGpxText(text, filename) {
   if (times.length > 1) {
     const a = Date.parse(times[0]), b = Date.parse(times[times.length - 1]);
     if (isFinite(a) && isFinite(b)) hours = +(((b - a) / 3600000).toFixed(2));
-  } else if (ext.TimeUsed) hours = +(ext.TimeUsed / 3600000).toFixed(2);
+  } else if (ext.TimeUsed && +ext.TimeUsed > 0) hours = +(ext.TimeUsed / 3600000).toFixed(2);
 
   const name = ext.name || filename.replace(/\.gpx$/i, '');
   const desc = ext.description || '';
   const tags = (ext.TrackTags || '').split(/[,，、\s]+/).filter(Boolean);
-  const region = (ext.PosStartName || '').replace('金华市', '') || null;
+  // 与 build_routes.py 同口径的第一步：PosStartName 里含且仅含一个县名才认。
+  // 它是自由文本（「金华市义乌市上溪镇五星社村岩下村1号」），不能整串比对。
+  // 这里不做行政边界判定（那要 77 KB 边界数据，只用于构建期）—— 认不出来就留空，不猜。
+  const COUNTIES = ['婺城区', '金东区', '兰溪市', '义乌市', '东阳市', '永康市', '武义县', '浦江县', '磐安县'];
+  const psHits = COUNTIES.filter(c => (ext.PosStartName || '').includes(c));
+  const region = psHits.length === 1 ? psHits[0] : null;
   const distKm = +dist.toFixed(2), ascM = Math.round(asc);
   const difficulty = (distKm <= 8 && ascM <= 400) ? '休闲' : (distKm <= 15 && ascM <= 900) ? '中等' : '困难';
   const blob = desc + ' ' + wpts.map(w => w.name).join(' ') + ' ' + tags.join(' ');
@@ -751,6 +768,7 @@ function parseGpxText(text, filename) {
     ele_max: eles.length ? Math.round(Math.max(...eles)) : null,
     hours, pause_hours: ext.PauseTime ? +(ext.PauseTime / 3600000).toFixed(2) : null,
     track_points: trkpts.length, waypoints: wpts.length,
+    geometry_from: geometryFrom,
     start: { lon: trkpts[0].lon, lat: trkpts[0].lat },
     end: { lon: trkpts[trkpts.length - 1].lon, lat: trkpts[trkpts.length - 1].lat },
     tags, description: desc,

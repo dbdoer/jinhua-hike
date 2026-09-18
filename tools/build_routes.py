@@ -67,6 +67,87 @@ def haversine(lat1, lon1, lat2, lon2):
     return 2 * R * math.asin(math.sqrt(a))
 
 
+# ---------------- 行政区归属：拿真实边界判定，不用「离县城中心最近」 ----------------
+# 边界来自阿里云 DataV.GeoAtlas（金华市 330700 的 9 个县市区完整多边形）。
+# **它是 GCJ-02 火星坐标**，而 GPX 是 WGS-84，本地实测两者差约 560 m。
+# 不转换的话边界附近的点会判到隔壁县：实测 25 条有上传者自报县名的路线，
+# 直接判对 24/25，先转 GCJ 再判 25/25。所以这里必须先转。
+_A = 6378245.0
+_EE = 0.00669342162296594323
+_BOUND = {}
+
+
+def _wgs2gcj(lon, lat):
+    def tlat(x, y):
+        r = -100.0 + 2.0 * x + 3.0 * y + 0.2 * y * y + 0.1 * x * y + 0.2 * math.sqrt(abs(x))
+        r += (20.0 * math.sin(6.0 * x * math.pi) + 20.0 * math.sin(2.0 * x * math.pi)) * 2.0 / 3.0
+        r += (20.0 * math.sin(y * math.pi) + 40.0 * math.sin(y / 3.0 * math.pi)) * 2.0 / 3.0
+        r += (160.0 * math.sin(y / 12.0 * math.pi) + 320.0 * math.sin(y * math.pi / 30.0)) * 2.0 / 3.0
+        return r
+
+    def tlon(x, y):
+        r = 300.0 + x + 2.0 * y + 0.1 * x * x + 0.1 * x * y + 0.1 * math.sqrt(abs(x))
+        r += (20.0 * math.sin(6.0 * x * math.pi) + 20.0 * math.sin(2.0 * x * math.pi)) * 2.0 / 3.0
+        r += (20.0 * math.sin(x * math.pi) + 40.0 * math.sin(x / 3.0 * math.pi)) * 2.0 / 3.0
+        r += (150.0 * math.sin(x / 12.0 * math.pi) + 300.0 * math.sin(x / 30.0 * math.pi)) * 2.0 / 3.0
+        return r
+
+    dlat = tlat(lon - 105.0, lat - 35.0)
+    dlon = tlon(lon - 105.0, lat - 35.0)
+    rad = lat / 180.0 * math.pi
+    m = 1 - _EE * math.sin(rad) ** 2
+    sm = math.sqrt(m)
+    return (lon + dlon * 180.0 / (_A / sm * math.cos(rad) * math.pi),
+            lat + dlat * 180.0 / ((_A * (1 - _EE)) / (m * sm) * math.pi))
+
+
+def _load_boundaries():
+    if "v" not in _BOUND:
+        try:
+            with open(os.path.join(ROOT, "tools", "data", "jinhua_counties.json"),
+                      encoding="utf-8") as fp:
+                _BOUND["v"] = json.load(fp)["counties"]
+        except Exception:  # noqa: BLE001
+            _BOUND["v"] = []
+    return _BOUND["v"]
+
+
+def _in_ring(x, y, ring):
+    inside = False
+    n = len(ring)
+    for i in range(n):
+        x1, y1 = ring[i][0], ring[i][1]
+        x2, y2 = ring[(i + 1) % n][0], ring[(i + 1) % n][1]
+        if (y1 > y) != (y2 > y) and x < (x2 - x1) * (y - y1) / (y2 - y1) + x1:
+            inside = not inside
+    return inside
+
+
+def county_of(lon, lat):
+    """这个点在哪个县市区里（必须传 WGS-84）；在金华市界外返回 None"""
+    glon, glat = _wgs2gcj(lon, lat)
+    for c in _load_boundaries():
+        g = c["geometry"]
+        for poly in (g["coordinates"] if g["type"] == "MultiPolygon" else [g["coordinates"]]):
+            if _in_ring(glon, glat, poly[0]) and not any(_in_ring(glon, glat, h) for h in poly[1:]):
+                return c["name"]
+    return None
+
+
+def locate_track(trkpts):
+    """先看起点落在哪个县；起点在界外（GPS 抖动或跨市）再沿轨迹多试几个点取多数"""
+    c = county_of(trkpts[0]["lon"], trkpts[0]["lat"])
+    if c:
+        return c
+    n = len(trkpts)
+    votes = {}
+    for i in (n // 4, n // 2, (3 * n) // 4, n - 1):
+        c = county_of(trkpts[i]["lon"], trkpts[i]["lat"])
+        if c:
+            votes[c] = votes.get(c, 0) + 1
+    return max(votes, key=votes.get) if votes else None
+
+
 def rdp(points, eps, must_keep=()):
     """Douglas-Peucker 抽稀，points = [[lon,lat,ele?], ...]
 
@@ -113,11 +194,18 @@ def parse_gpx(path):
             break
     gpx_ext = gpx_ext or {}
 
-    trkpts, wpts = [], []
+    trkpts, rtepts, wpts = [], [], []
     for el in root.iter():
         t = strip_ns(el.tag)
         if t == "trkpt" and el.get("lat"):
             trkpts.append({
+                "lat": float(el.get("lat")),
+                "lon": float(el.get("lon")),
+                "ele": float(child_text(el, "ele")) if child_text(el, "ele") else None,
+                "time": child_text(el, "time"),
+            })
+        elif t == "rtept" and el.get("lat"):
+            rtepts.append({
                 "lat": float(el.get("lat")),
                 "lon": float(el.get("lon")),
                 "ele": float(child_text(el, "ele")) if child_text(el, "ele") else None,
@@ -133,6 +221,16 @@ def parse_gpx(path):
                 "ele": float(child_text(el, "ele")) if child_text(el, "ele") else None,
                 "time": child_text(el, "time"),
             })
+
+    # 两步路有时导出的是「路线」不是「轨迹」：几何点在 <rte>/<rtept> 下，没有录制时间。
+    # 例如在 App 里把多段轨迹合并/拆分后导出，就会走这条路径。
+    # 没有 trkpt 时退回用 rtept，其余口径（距离/爬升/难度/剖面）完全一致。
+    geometry_from = "trk"
+    if not trkpts:
+        if not rtepts:
+            raise ValueError("既没有 trkpt 也没有 rtept")
+        trkpts = rtepts
+        geometry_from = "rte"
 
     if not trkpts:
         raise ValueError("没有 trkpt")
@@ -176,7 +274,9 @@ def parse_gpx(path):
         except ValueError:
             dur_s = None
     if dur_s is None and gpx_ext.get("TimeUsed"):
-        dur_s = float(gpx_ext["TimeUsed"]) / 1000.0
+        _used = float(gpx_ext["TimeUsed"]) / 1000.0
+        # 「路线」类文件里 TimeUsed/PauseTime 是 0，不能当成功耗时，否则用时显示成 0 h
+        dur_s = _used if _used > 0 else None
     pause_s = float(gpx_ext["PauseTime"]) / 1000.0 if gpx_ext.get("PauseTime") else None
 
     # 抽稀（约 4m 容差）。最高/最低点强制保留：前端从几何现算剖面，
@@ -192,16 +292,25 @@ def parse_gpx(path):
     name = gpx_ext.get("name") or os.path.splitext(os.path.basename(path))[0]
     desc = gpx_ext.get("description") or ""
     tags = [t for t in re.split(r"[,，、\s]+", gpx_ext.get("TrackTags", "")) if t]
-    region = (gpx_ext.get("PosStartName") or "").replace("金华市", "") or None
-    if region and region not in COUNTY_CENTERS:
-        region = None
-    if not region:
-        # 兜底：离轨迹起点最近的金华县市中心
+    # 区域归属，三步走，越靠前越可信：
+    # ① PosStartName 里明确含且仅含一个县名 —— 那是上传者自己写的，最可信
+    #    （注意它是自由文本：「金华市义乌市上溪镇五星社村岩下村1号」这种也要能认出来，
+    #      所以用「包含」而不是整串相等）
+    # ② 拿轨迹起点做行政边界内判定（真实多边形，WGS→GCJ 后再判）
+    # ③ 都失败才退回「离县城中心最近」，并明确标注是近似
+    region, region_source = None, None
+    ps = gpx_ext.get("PosStartName") or ""
+    hits = [c for c in COUNTY_CENTERS if c in ps]
+    if len(hits) == 1:
+        region, region_source = hits[0], "两步路 PosStartName"
+    if region is None:
+        by_bound = locate_track(trkpts)
+        if by_bound:
+            region, region_source = by_bound, "按行政边界判定"
+    if region is None:
         region = min(COUNTY_CENTERS, key=lambda k: haversine(
             trkpts[0]["lat"], trkpts[0]["lon"], *COUNTY_CENTERS[k]))
-        region_source = "按起点坐标就近归类（近似）"
-    else:
-        region_source = "两步路 PosStartName"
+        region_source = "按起点坐标就近归类（近似，起点在金华市界外）"
 
     dist_km = round(dist, 2)
     asc_m = round(ascent)
@@ -254,6 +363,8 @@ def parse_gpx(path):
         "pause_hours": round(pause_s / 3600, 2) if pause_s else None,
         "track_points": len(trkpts),
         "waypoints": len(wpts),
+        # 几何来自 <trkpt>（真实记录的轨迹）还是 <rtept>（两步路的「路线」，无录制时间）
+        "geometry_from": geometry_from,
         "start": {"lon": trkpts[0]["lon"], "lat": trkpts[0]["lat"]},
         "end": {"lon": trkpts[-1]["lon"], "lat": trkpts[-1]["lat"]},
         "tags": tags,
