@@ -336,7 +336,12 @@ function select(id) {
     type: 'FeatureCollection',
     features: [{ type: 'Feature', properties: {}, geometry: r.geometry }],
   });
-  map.fitBounds(boundsOf(r), { padding: { top: 200, right: 430, bottom: 70, left: 70 }, duration: 900 });
+  // 留白必须按屏幕实际算，别写死。原来这里是 { top:200, right:430, bottom:70, left:70 }，
+  // 那是给桌面右侧面板配的；窄屏（390px）下 right:430 把可用宽度压成 -110px，
+  // MapLibre 算不出可用区域，干脆一动不动 —— 手机上点列表里的路线，地图毫无反应。
+  // maxZoom 只是防退化的护栏（比如 bbox 缩成一个点）；实测所有真实路线
+  // 选中时的缩放落在 13.9~16.5，取 17 不会切到任何一条，别往下调。
+  map.fitBounds(boundsOf(r), { padding: fitPadding(), maxZoom: 17, duration: 900 });
   renderDetail(r);
   refresh();
   if (state.wpt) {
