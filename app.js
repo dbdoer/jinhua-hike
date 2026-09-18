@@ -183,6 +183,57 @@ function boundsOf(r) {
   return b;
 }
 
+/* 筛选后「补视野但不抢镜头」：
+   只有当当前视野里**一条结果都看不见**时，才把地图移到结果集上。
+   只要视野里已经有结果，就绝不动用户的地图 —— 用户拖到哪儿就是哪儿。
+
+   为什么用 bbox 相交而不是 queryRenderedFeatures：后者依赖瓦片渲染完成，
+   而 setData 是异步进 worker 的，刚设完就读会得到 0，会误判成「看不见」。
+   isMoving() 那道 guard 是防跟镜头动画抢：select() 里 fitBounds 带动画，
+   动画途中 getBounds() 返回的是中途状态，不拦的话会误判。 */
+function ensureVisible(list) {
+  if (!list.length || map.isMoving()) return;
+  const v = map.getBounds();
+  const w = v.getWest(), e = v.getEast(), s = v.getSouth(), n = v.getNorth();
+  for (const r of list) {
+    const b = boundsOf(r);
+    if (!(b.getEast() < w || b.getWest() > e || b.getNorth() < s || b.getSouth() > n)) return;
+  }
+  const all = new maplibregl.LngLatBounds();
+  list.forEach(r => all.extend(boundsOf(r)));
+  map.fitBounds(all, { padding: fitPadding(), duration: 700 });
+}
+
+// 平移目标区域时给顶部筛选条和右侧/底部面板让位，别把结果藏到面板底下
+function fitPadding() {
+  const H = window.innerHeight, W = window.innerWidth;
+  const bar = document.querySelector('.bar');
+  const top = (bar ? Math.round(bar.getBoundingClientRect().height) : 40) + 20;
+  let p;
+  if (window.matchMedia('(max-width: 900px)').matches) {
+    // 窄屏：面板贴在下方占约 46%
+    p = { top, bottom: Math.round(H * 0.5), left: 24, right: 24 };
+  } else {
+    const panel = document.getElementById('panel');
+    p = {
+      top, bottom: 40, left: 40,
+      right: panel ? Math.round(W - panel.getBoundingClientRect().left + 16) : 40,
+    };
+  }
+  // 窄屏下筛选条展开能有 330+ px 高，加上面板占半屏，上下留白会把可视区挤到几乎没有，
+  // fitBounds 拿不到可用高度会算出荒唐的缩放。按比例压回去，至少留 30% 视野。
+  const vLimit = Math.round(H * 0.7), hLimit = Math.round(W * 0.7);
+  if (p.top + p.bottom > vLimit) {
+    const k = vLimit / (p.top + p.bottom);
+    p.top = Math.round(p.top * k); p.bottom = Math.round(p.bottom * k);
+  }
+  if (p.left + p.right > hLimit) {
+    const k = hLimit / (p.left + p.right);
+    p.left = Math.round(p.left * k); p.right = Math.round(p.right * k);
+  }
+  return p;
+}
+
 function refresh() {
   const list = filtered();
 
@@ -232,6 +283,9 @@ function refresh() {
   const nAct = state.regions.size + state.diffs.size + (state.dist !== 'all' ? 1 : 0)
     + (state.family ? 1 : 0) + (state.water ? 1 : 0);
   document.getElementById('filter-count').textContent = nAct ? String(nAct) : '';
+
+  // 结果被筛到视野外了才补镜头（视野里已经有结果就不动，见 ensureVisible）
+  ensureVisible(list);
 }
 
 /* --------------------------- 列表卡片 --------------------------- */
