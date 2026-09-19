@@ -574,7 +574,6 @@ function renderDetail(r) {
 
     <div class="note" style="margin-top:14px">
       轨迹版权归上传者所有，本页仅作展示演示；出行前请以现场路况、天气和景区公告为准。
-      两步路没有开放 API，站点的轨迹页面也带 WAF 防护，批量获取唯一可行的方式是用户在 App 内导出 GPX。
     </div>
   `;
   document.getElementById('detail').querySelectorAll('[data-copy]').forEach(b => {
