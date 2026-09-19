@@ -50,11 +50,18 @@ button.primary:hover{background:#047857}
 .base-switch button.on{background:var(--ink);color:#fff}
 .base-switch button:disabled{opacity:.38;cursor:not-allowed}
 
-/* 窄屏折叠按钮：宽屏不出现（样式在下面的 media query 里打开） */
-.filter-toggle{display:none;align-items:center;gap:5px;white-space:nowrap}
+/* 窄屏折叠按钮：宽屏不出现（样式在下面的 media query 里打开）
+   展开后按钮改口叫「收起」。原先一直写「筛选」，等于没告诉用户点这儿能收回去。
+   底色也从纯白改成浅灰，好和白色横条拉开、看得出是个按钮。 */
+.filter-toggle{display:none;align-items:center;gap:5px;white-space:nowrap;
+  background:#f1f5f9;border-color:#cbd5e1;font-weight:500}
+.filter-toggle:hover{background:#e2e8f0}
+.filter-toggle .lbl-open{display:none}
+.bar.open .filter-toggle .lbl-closed{display:none}
+.bar.open .filter-toggle .lbl-open{display:inline}
 .filter-toggle .n{background:var(--green);color:#fff;border-radius:999px;padding:0 6px;font-size:11px;line-height:17px}
 .filter-toggle .n:empty{display:none}
-.filter-toggle .caret{font-size:10px;color:var(--ink3);transition:transform .15s}
+.filter-toggle .caret{font-size:10px;color:var(--ink2);transition:transform .15s}
 .bar.open .filter-toggle .caret{transform:rotate(180deg)}
 .only-narrow{display:none}
 
@@ -69,8 +76,16 @@ button.primary:hover{background:#047857}
 .panel-head .cnt{font-size:12.5px;color:var(--ink2);margin-left:auto}
 .panel-head .cnt b{font-size:16px;color:var(--ink)}
 .back{border:none;padding:0;color:var(--green);font-size:13px}
-/* 窄屏专用：把面板收起来给地图腾地方（宽屏面板在右侧，用不着） */
-.collapse-toggle{display:none;border:none;padding:0 2px;margin-left:10px;color:var(--ink2);font-size:12.5px;white-space:nowrap}
+/* 窄屏专用：把面板收起来给地图腾地方（宽屏面板在右侧，用不着）
+   原先是无边框无内边距的一撮灰字（实测 29x16），没人看得出能点。
+   改成带底色的胶囊按钮，并让箭头跟着 aria-expanded 走：展开=可往下收，收起=可往上展。 */
+.collapse-toggle{display:none;align-items:center;gap:4px;margin-left:8px;
+  padding:4px 11px;font-size:12.5px;font-weight:500;
+  color:var(--ink);background:#f1f5f9;border:1px solid var(--line);border-radius:999px;white-space:nowrap}
+.collapse-toggle:hover{background:#e2e8f0}
+.collapse-toggle::after{font-size:10px;color:var(--ink2)}
+.collapse-toggle[aria-expanded="true"]::after{content:"▾"}
+.collapse-toggle[aria-expanded="false"]::after{content:"▴"}
 .list,.detail{overflow-y:auto;flex:1}
 .list{padding:10px}
 .card{
@@ -157,6 +172,6 @@ button.primary:hover{background:#047857}
   #panel.collapsed{height:48px}
   #panel.collapsed .list,#panel.collapsed .detail{display:none}
   #panel.collapsed .panel-head{border-bottom:none}
-  .collapse-toggle{display:inline-block}
+  .collapse-toggle{display:inline-flex}
   .legend{display:none}
 }
