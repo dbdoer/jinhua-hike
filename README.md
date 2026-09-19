@@ -29,7 +29,7 @@ jinhua-hike/
 ├── index.html          页面骨架（筛选条 / 地图 / 面板 / 图例）
 ├── app.js              全部前端逻辑：地图、筛选、列表、详情、剖面
 ├── style.css
-├── vendor/             MapLibre GL（直接放进来，不走 CDN、不做构建）
+├── vendor/             MapLibre GL 本地兜底（主路径走七牛 CDN，CDN 挂了它接管）
 ├── data/               构建产物，由 tools/build_routes.py 生成
 │   ├── routes.json     完整数据（含 geometry / annotations）
 │   ├── routes.geojson  标准 GeoJSON，供外部工具吃
@@ -41,13 +41,14 @@ jinhua-hike/
 │   ├── check_dupes.py
 │   ├── check_gpx_manifest.py
 │   └── data/jinhua_counties.json   金华 9 个县市区的行政边界多边形
-└── docs/ shots/        截图归档（shots/ 不进版本库）
+└── shots/              截图归档（不进版本库）
 ```
 
 ## 数据管线
 
 ```
-gpx/*.gpx  ──build_routes.py──▶  data/routes.{json,geojson,js}
+gpx/*.gpx  ──build_routes.py──▶  data/routes.{json,geojson}
+                                 + routes.index.js + routes.geom.js
 ```
 
 ```bash
