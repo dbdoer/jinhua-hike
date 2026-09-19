@@ -1,5 +1,5 @@
 /* =========================================================================
-   金华徒步路线 Demo
+   金华徒步路线
    数据：两步路(2bulu)导出的 GPX -> tools/build_routes.py
          -> data/routes.index.js（列表元数据）+ data/routes.geom.js（几何）
    底图：OpenFreeMap(免费无 key) / OpenTopoMap(等高线) / Esri 影像

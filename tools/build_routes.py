@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-两步路 GPX 轨迹 -> 网页 demo 用的 routes.json / routes.geojson
+两步路 GPX 轨迹 -> 网页用的 routes.json / routes.geojson
+                 / routes.index.js / routes.geom.js
 
 用法:
     python tools/build_routes.py            # 读 gpx/*.gpx，输出 data/
