@@ -32,7 +32,8 @@ jinhua-hike/
 ├── data/               构建产物，由 tools/build_routes.py 生成
 │   ├── routes.json     完整数据（含 geometry / annotations）
 │   ├── routes.geojson  标准 GeoJSON，供外部工具吃
-│   └── routes.js       同一份数据包成 window.HIKE_DATA，给 file:// 用
+│   ├── routes.index.js 列表元数据（window.HIKE_INDEX，~20KB，首屏就要）
+│   └── routes.geom.js  几何 + 标注点（window.HIKE_GEOM，~130KB，可晚一步到）
 ├── gpx/                两步路导出的原始 GPX + MANIFEST.json（字节指纹）
 ├── tools/              构建与自查脚本（Python 3，只用标准库）
 │   ├── build_routes.py

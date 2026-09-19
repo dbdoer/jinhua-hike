@@ -110,8 +110,11 @@
 <div id="toast" class="toast" hidden></div>
 <div id="drop" class="drop" hidden><div>松手即导入 GPX 轨迹</div></div>
 
-<script defer src="vendor/maplibre-gl.js"></script>
-<script defer src="data/routes.js"></script>
-<script defer src="app.js"></script>
+<!-- 列表元数据 + 逻辑先上（首屏只要这两样）。maplibre（~250KB）和几何
+     （~130KB）各用 async 单独拉，到位后各自回调；两个齐了才建图。 -->
+<script src="data/routes.index.js"></script>
+<script src="app.js"></script>
+<script async src="vendor/maplibre-gl.js" onload="window.__initMap && window.__initMap()"></script>
+<script async src="data/routes.geom.js" onload="window.__onGeomReady && window.__onGeomReady()"></script>
 </body>
 </html>

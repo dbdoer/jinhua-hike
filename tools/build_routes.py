@@ -422,17 +422,32 @@ def main():
         }, fp, ensure_ascii=False, indent=1)
     with open(os.path.join(args.out, "routes.geojson"), "w", encoding="utf-8") as fp:
         json.dump({"type": "FeatureCollection", "features": feats}, fp, ensure_ascii=False)
-    # 同时产出一份 JS，页面用 <script> 直接吃，避免 file:// 下 fetch 被拦
-    with open(os.path.join(args.out, "routes.js"), "w", encoding="utf-8") as fp:
-        fp.write("window.HIKE_DATA = ")
+    # 页面用 <script> 直接吃，避免 file:// 下 fetch 被拦。拆成两份：
+    #   routes.index.js —— 列表元数据（~20KB），首屏就要
+    #   routes.geom.js  —— 几何 + 标注点（~130KB），可以晚一步到
+    # 原先是一整份 routes.js（523KB 原始 / 150KB gzip），首屏得等它下完列表才出。
+    index_routes = []
+    geom = {}
+    for r in routes:
+        meta = {k: v for k, v in r.items() if k not in ("geometry", "annotations")}
+        meta["anno_count"] = len(r.get("annotations") or [])
+        index_routes.append(meta)
+        geom[r["id"]] = {"geometry": r["geometry"], "annotations": r.get("annotations") or []}
+
+    with open(os.path.join(args.out, "routes.index.js"), "w", encoding="utf-8") as fp:
+        fp.write("window.HIKE_INDEX = ")
         json.dump({
             "generated_from": "两步路 GPX 导出",
-            "count": len(routes),
-            "routes": routes,
+            "count": len(index_routes),
+            "routes": index_routes,
         }, fp, ensure_ascii=False)
         fp.write(";\n")
+    with open(os.path.join(args.out, "routes.geom.js"), "w", encoding="utf-8") as fp:
+        fp.write("window.HIKE_GEOM = ")
+        json.dump(geom, fp, ensure_ascii=False)
+        fp.write(";\n")
 
-    print("\n生成 %d 条 -> data/routes.json + data/routes.geojson" % len(routes))
+    print("\n生成 %d 条 -> routes.json / routes.geojson / routes.index.js / routes.geom.js" % len(routes))
     for f, e in bad:
         print("跳过(解析失败): %s %s" % (f, e))
 

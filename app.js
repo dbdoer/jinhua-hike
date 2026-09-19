@@ -13,7 +13,18 @@ const JINHUA = {
   bounds: [[119.05, 28.42], [120.98, 29.82]],
 };
 
-let routes = ((window.HIKE_DATA || {}).routes || []).slice();
+/* 列表只要元数据（routes.index.js，~20KB）；几何（routes.geom.js，~130KB）
+   晚一步到，到了再挂上去 —— 首屏不必等它，反正地图本来也得等 maplibre。 */
+let routes = ((window.HIKE_INDEX || {}).routes || []).slice();
+
+function attachGeometry() {
+  const g = window.HIKE_GEOM;
+  if (!g) return;
+  routes.forEach(r => {
+    const it = g[r.id];
+    if (it) { r.geometry = it.geometry; r.annotations = it.annotations || []; }
+  });
+}
 const state = {
   regions: new Set(), diffs: new Set(),
   family: false, water: false, wpt: true,
@@ -37,17 +48,10 @@ const isAdmin = (() => {
   try { return localStorage.getItem(ADMIN_KEY) === '1'; } catch (_) { return false; }
 })();
 
-/* ----------------------------- 地图 ----------------------------- */
-const map = new maplibregl.Map({
-  container: 'map',
-  style: 'https://tiles.openfreemap.org/styles/liberty',
-  center: JINHUA.center,
-  zoom: JINHUA.zoom,
-  maxBounds: JINHUA.bounds,
-  attributionControl: { compact: true },
-});
-map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'bottom-right');
-map.addControl(new maplibregl.ScaleControl({ maxWidth: 110, unit: 'metric' }), 'bottom-right');
+/* ----------------------------- 地图 -----------------------------
+   建图推迟到 initMap()：列表不依赖地图，得先让它出来。maplibre 有 ~250KB，
+   比列表数据重得多 —— 原先两者一起 gate 在 map 的 load 事件上，等于白等。 */
+let map = null;
 
 const emptyFC = { type: 'FeatureCollection', features: [] };
 
@@ -161,20 +165,46 @@ function onStyleReady() {
   refresh();
 }
 
-map.on('style.load', onStyleReady);
+function initMap() {
+  if (map) return;
+  map = new maplibregl.Map({
+    container: 'map',
+    style: 'https://tiles.openfreemap.org/styles/liberty',
+    center: JINHUA.center,
+    zoom: JINHUA.zoom,
+    maxBounds: JINHUA.bounds,
+    attributionControl: { compact: true },
+  });
+  map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'bottom-right');
+  map.addControl(new maplibregl.ScaleControl({ maxWidth: 110, unit: 'metric' }), 'bottom-right');
+  map.on('style.load', onStyleReady);
 
-fallbackTimer = setTimeout(() => {
-  if (inited) return;
-  state.base = 'topo';
-  const libBtn = document.querySelector('#base-switch button[data-base="liberty"]');
-  if (libBtn) { libBtn.disabled = true; libBtn.title = '默认底图加载失败，已切到备用底图'; }
-  toast('默认底图加载超时，已切到备用底图');
-  try {
-    map.setStyle(FALLBACK_STYLE);
-  } catch (_) {
-    onStyleReady();
-  }
-}, FALLBACK_AFTER_MS);
+  fallbackTimer = setTimeout(() => {
+    if (inited) return;
+    state.base = 'topo';
+    const libBtn = document.querySelector('#base-switch button[data-base="liberty"]');
+    if (libBtn) { libBtn.disabled = true; libBtn.title = '默认底图加载失败，已切到备用底图'; }
+    toast('默认底图加载超时，已切到备用底图');
+    try {
+      map.setStyle(FALLBACK_STYLE);
+    } catch (_) {
+      onStyleReady();
+    }
+  }, FALLBACK_AFTER_MS);
+}
+/* 地图要两样齐了才建：maplibre 本体 + 几何数据。两个都是 async 拉的，先后随意。 */
+let geomReady = typeof window.HIKE_GEOM !== 'undefined';
+function bootMap() {
+  if (!window.maplibregl || !geomReady) return;
+  attachGeometry();
+  initMap();
+}
+window.__initMap = bootMap;
+window.__onGeomReady = () => { geomReady = true; bootMap(); };
+
+/* 先把列表摆出来，不等地图。refresh() 里地图那一段在 map === null 时整块跳过。 */
+refresh();
+bootMap();   // 两个资源都在缓存里时，这一步就已经齐了
 
 // 顶部筛选条高度会随 chip 换行变化，面板顶边跟着走，别互相压
 function layoutPanel() {
@@ -238,7 +268,7 @@ function boundsOf(r) {
    isMoving() 那道 guard 是防跟镜头动画抢：select() 里 fitBounds 带动画，
    动画途中 getBounds() 返回的是中途状态，不拦的话会误判。 */
 function ensureVisible(list) {
-  if (!list.length || map.isMoving()) return;
+  if (!map || !list.length || map.isMoving()) return;
   const v = map.getBounds();
   const w = v.getWest(), e = v.getEast(), s = v.getSouth(), n = v.getNorth();
   for (const r of list) {
@@ -288,6 +318,7 @@ function fitPadding() {
 // 把镜头对准某条路线。留白一律走 fitPadding()，别再出现写死的数字。
 // maxZoom 只是防退化的护栏（bbox 缩成一个点之类）；实测真实路线选中时缩放落在 13.9~16.5。
 function fitToRoute(r, duration) {
+  if (!map) return;
   map.fitBounds(boundsOf(r), { padding: fitPadding(), maxZoom: 17, duration: duration || 900 });
 }
 
@@ -317,38 +348,40 @@ document.getElementById('btn-collapse').onclick = () => {
 function refresh() {
   const list = filtered();
 
-  map.getSource('routes').setData({
-    type: 'FeatureCollection',
-    features: list.map(r => ({
-      type: 'Feature', id: r.id,
-      properties: {
-        id: r.id, name: r.name, difficulty: r.difficulty, region: r.region,
-        distance_km: r.distance_km, ascent_m: r.ascent_m,
-      },
-      geometry: r.geometry,
-    })),
-  });
+  if (map) {
+    map.getSource('routes').setData({
+      type: 'FeatureCollection',
+      features: list.map(r => ({
+        type: 'Feature', id: r.id,
+        properties: {
+          id: r.id, name: r.name, difficulty: r.difficulty, region: r.region,
+          distance_km: r.distance_km, ascent_m: r.ascent_m,
+        },
+        geometry: r.geometry,
+      })),
+    });
 
-  map.getSource('ends').setData({
-    type: 'FeatureCollection',
-    features: list.flatMap(r => [
-      { type: 'Feature', id: r.id + '_s', properties: { id: r.id + '_s', route_id: r.id, role: 'start', name: r.name }, geometry: { type: 'Point', coordinates: [r.start.lon, r.start.lat] } },
-      { type: 'Feature', id: r.id + '_e', properties: { id: r.id + '_e', route_id: r.id, role: 'end', name: r.name }, geometry: { type: 'Point', coordinates: [r.end.lon, r.end.lat] } },
-    ]),
-  });
+    map.getSource('ends').setData({
+      type: 'FeatureCollection',
+      features: list.flatMap(r => [
+        { type: 'Feature', id: r.id + '_s', properties: { id: r.id + '_s', route_id: r.id, role: 'start', name: r.name }, geometry: { type: 'Point', coordinates: [r.start.lon, r.start.lat] } },
+        { type: 'Feature', id: r.id + '_e', properties: { id: r.id + '_e', route_id: r.id, role: 'end', name: r.name }, geometry: { type: 'Point', coordinates: [r.end.lon, r.end.lat] } },
+      ]),
+    });
 
-  const annoFeats = [];
-  list.forEach(r => (r.annotations || []).forEach((a, i) => annoFeats.push({
-    type: 'Feature', id: r.id + '_a' + i,
-    properties: { id: r.id + '_a' + i, route_id: r.id, name: a.name || '标注点', ele: a.ele, time: a.time },
-    geometry: { type: 'Point', coordinates: [a.lon, a.lat] },
-  })));
-  map.getSource('annos').setData({ type: 'FeatureCollection', features: annoFeats });
+    const annoFeats = [];
+    list.forEach(r => (r.annotations || []).forEach((a, i) => annoFeats.push({
+      type: 'Feature', id: r.id + '_a' + i,
+      properties: { id: r.id + '_a' + i, route_id: r.id, name: a.name || '标注点', ele: a.ele, time: a.time },
+      geometry: { type: 'Point', coordinates: [a.lon, a.lat] },
+    })));
+    map.getSource('annos').setData({ type: 'FeatureCollection', features: annoFeats });
 
-  map.setLayoutProperty('anno-dot', 'visibility', state.wpt ? 'visible' : 'none');
-  map.setFilter('anno-dot', state.wpt && state.selected
-    ? ['==', ['get', 'route_id'], state.selected]
-    : ['==', ['get', 'id'], '__none__']);
+    map.setLayoutProperty('anno-dot', 'visibility', state.wpt ? 'visible' : 'none');
+    map.setFilter('anno-dot', state.wpt && state.selected
+      ? ['==', ['get', 'route_id'], state.selected]
+      : ['==', ['get', 'id'], '__none__']);
+  }
 
   renderList(list);
   document.getElementById('cnt-hit').textContent = list.length;
@@ -389,7 +422,8 @@ function renderList(list) {
     const tags = [];
     if (r.family === true) tags.push(`<span class="tag t-family">亲子可走</span>`);
     if (r.has_water === true) tags.push(`<span class="tag t-water">涉水 / 瀑布</span>`);
-    if ((r.annotations || []).length) tags.push(`<span class="tag t-anno">${r.annotations.length} 个标注点</span>`);
+    const nAnno = r.anno_count != null ? r.anno_count : (r.annotations || []).length;
+    if (nAnno) tags.push(`<span class="tag t-anno">${nAnno} 个标注点</span>`);
     if (r.imported) tags.push(`<span class="tag">刚导入</span>`);
     return `<div class="card ${state.selected === r.id ? 'on' : ''}" data-id="${r.id}">
       <h3>${esc(r.name)}<span class="badge ${r.difficulty}">${r.difficulty}</span></h3>
@@ -412,16 +446,18 @@ function select(id) {
   const r = routes.find(x => x.id === id);
   if (!r) return;
   state.selected = id;
-  map.getSource('sel').setData({
-    type: 'FeatureCollection',
-    features: [{ type: 'Feature', properties: {}, geometry: r.geometry }],
-  });
+  if (map) {
+    map.getSource('sel').setData({
+      type: 'FeatureCollection',
+      features: [{ type: 'Feature', properties: {}, geometry: r.geometry }],
+    });
+  }
   // 留白必须按屏幕实际算，别写死：原来这里是 { top:200, right:430, bottom:70, left:70 }，
   // 那是给桌面右侧面板配的，窄屏下把可用宽度压成负的，地图干脆不动。见 fitToRoute()。
   fitToRoute(r, 900);
   renderDetail(r);
   refresh();
-  if (state.wpt) {
+  if (map && state.wpt) {
     map.setFilter('anno-dot', ['==', ['get', 'route_id'], id]);
     map.setLayoutProperty('anno-dot', 'visibility', 'visible');
   }
@@ -431,7 +467,7 @@ function backToList() {
   state.selected = null;
   // 收起状态下点「返回列表」得先把面板放出来，否则列表是隐藏的，用户对着一条空条发呆
   setPanelCollapsed(false);
-  map.getSource('sel').setData(emptyFC);
+  if (map) map.getSource('sel').setData(emptyFC);
   document.getElementById('detail').hidden = true;
   document.getElementById('list').hidden = false;
   document.getElementById('btn-back').hidden = true;
@@ -547,14 +583,15 @@ function renderDetail(r) {
   document.getElementById('detail').querySelectorAll('[data-locate]').forEach(b => {
     b.onclick = () => {
       const rr = routes.find(x => x.id === b.dataset.locate);
-      map.flyTo({ center: [rr.start.lon, rr.start.lat], zoom: 15 });
+      if (rr && map) map.flyTo({ center: [rr.start.lon, rr.start.lat], zoom: 15 });
     };
   });
   document.getElementById('detail').querySelectorAll('[data-goto]').forEach(b => {
     b.onclick = () => {
       const [rid, idx] = b.dataset.goto.split(':');
       const rr = routes.find(x => x.id === rid);
-      const a = rr.annotations[Number(idx)];
+      const a = (rr.annotations || [])[Number(idx)];
+      if (!a || !map) return;
       map.flyTo({ center: [a.lon, a.lat], zoom: 16 });
       new maplibregl.Popup().setLngLat([a.lon, a.lat])
         .setHTML(`<b>${esc(a.name || '标注点')}</b>${a.ele ? '<br>' + Math.round(a.ele) + ' m' : ''}`)
@@ -682,9 +719,9 @@ document.getElementById('btn-reset').onclick = () => {
   document.getElementById('f-water').checked = false;
   document.getElementById('f-sort').value = 'distance';
   document.getElementById('f-q').value = '';
-  map.getSource('sel').setData(emptyFC);
+  if (map) map.getSource('sel').setData(emptyFC);
   backToList();
-  map.fitBounds(JINHUA.bounds, { padding: 40, duration: 700 });
+  if (map) map.fitBounds(JINHUA.bounds, { padding: 40, duration: 700 });
 };
 document.getElementById('btn-back').onclick = backToList;
 
