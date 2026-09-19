@@ -61,8 +61,13 @@ button.primary:hover{background:#047857}
 .bar.open .filter-toggle .lbl-open{display:inline}
 .filter-toggle .n{background:var(--green);color:#fff;border-radius:999px;padding:0 6px;font-size:11px;line-height:17px}
 .filter-toggle .n:empty{display:none}
-.filter-toggle .caret{font-size:10px;color:var(--ink2);transition:transform .15s}
-.bar.open .filter-toggle .caret{transform:rotate(180deg)}
+/* 箭头原先是 10px 的浅灰小三角。用户反馈"太不明显"，但把字号放大到 15px 也没用 ——
+   ▾ 这个字形本身只占 em 的四成，字号再大还是小。改成 CSS 画的 8x8 折角箭头，
+   2px 描边，比字形大一整圈。font-size:0 把 span 里的 ▾ 藏掉（留着是防样式失效）。 */
+.filter-toggle .caret{font-size:0;width:8px;height:8px;flex:0 0 auto;
+  border-right:2px solid var(--ink);border-bottom:2px solid var(--ink);
+  transform:rotate(45deg);transition:transform .15s}
+.bar.open .filter-toggle .caret{transform:rotate(225deg)}
 .only-narrow{display:none}
 
 /* ---------- 右侧面板 ---------- */
@@ -83,9 +88,10 @@ button.primary:hover{background:#047857}
   padding:4px 11px;font-size:12.5px;font-weight:500;
   color:var(--ink);background:#f1f5f9;border:1px solid var(--line);border-radius:999px;white-space:nowrap}
 .collapse-toggle:hover{background:#e2e8f0}
-.collapse-toggle::after{font-size:10px;color:var(--ink2)}
-.collapse-toggle[aria-expanded="true"]::after{content:"▾"}
-.collapse-toggle[aria-expanded="false"]::after{content:"▴"}
+.collapse-toggle::after{content:"";width:7px;height:7px;flex:0 0 auto;
+  border-right:2px solid var(--ink);border-bottom:2px solid var(--ink);transform:rotate(45deg)}
+.collapse-toggle[aria-expanded="true"]::after{transform:rotate(45deg)}
+.collapse-toggle[aria-expanded="false"]::after{transform:rotate(225deg)}
 .list,.detail{overflow-y:auto;flex:1}
 .list{padding:10px}
 .card{
