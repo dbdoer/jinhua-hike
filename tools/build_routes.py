@@ -284,6 +284,10 @@ def parse_gpx(path):
         forced.append(max(ele_idx, key=lambda t: t[1])[0])
         forced.append(min(ele_idx, key=lambda t: t[1])[0])
     simp = rdp(raw, 0.00004, forced)
+    # 坐标只留 5 位小数（≈1.1 m）。两步路导出的是 7 位（≈1 cm），对徒步路线纯属
+    # 浪费字节 —— 几何是 routes.js 里最大的一块。5 位远小于抽稀容差（4 m），
+    # 不会改变形状。高程不动，免得与 ele_max 对不上。
+    simp = [[round(pt[0], 5), round(pt[1], 5)] + pt[2:] for pt in simp]
 
     name = gpx_ext.get("name") or os.path.splitext(os.path.basename(path))[0]
     desc = gpx_ext.get("description") or ""

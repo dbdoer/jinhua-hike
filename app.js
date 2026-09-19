@@ -51,7 +51,37 @@ map.addControl(new maplibregl.ScaleControl({ maxWidth: 110, unit: 'metric' }), '
 
 const emptyFC = { type: 'FeatureCollection', features: [] };
 
-map.on('load', () => {
+/* 默认底图（openfreemap 的 liberty）在境内实测会 TLS 断连。样式拉不回来时
+   style.load 不触发，而列表、筛选、交互全挂在初始化里 —— 整个页面跟着瘫掉，
+   不只是地图空白。所以留一条兜底：超时就换成纯栅格样式，照常初始化。 */
+const FALLBACK_STYLE = {
+  version: 8,
+  glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',
+  sources: {},
+  layers: [{ id: 'bg', type: 'background', paint: { 'background-color': '#eef2f5' } }],
+};
+const FALLBACK_AFTER_MS = 6000;
+let inited = false;
+let fallbackTimer = null;
+
+function applyBase() {
+  if (!inited) return;  // 图层还没加，onStyleReady 里会统一应用一次
+  map.setLayoutProperty('base-topo', 'visibility', state.base === 'topo' ? 'visible' : 'none');
+  map.setLayoutProperty('base-sat', 'visibility', state.base === 'sat' ? 'visible' : 'none');
+  const onRaster = state.base !== 'liberty';
+  // 栅格底图压在矢量之上，路线加一点不透明度更容易看清
+  map.setPaintProperty('route-line', 'line-opacity', onRaster ? 0.95 : 0.92);
+  map.setPaintProperty('route-sel', 'line-opacity', onRaster ? 0.9 : 0.85);
+  document.querySelectorAll('#base-switch button')
+    .forEach(x => x.classList.toggle('on', x.dataset.base === state.base));
+}
+
+// 用 style.load 而不是 load：setStyle 之后 load 不会再触发，style.load 会
+function onStyleReady() {
+  if (inited) return;
+  inited = true;
+  clearTimeout(fallbackTimer);
+
   // 1) 备选底图（放在最底层，用 visibility 切换；矢量底图会被它们盖住）
   map.addSource('topo', {
     type: 'raster', tileSize: 256, maxzoom: 17,
@@ -124,11 +154,27 @@ map.on('load', () => {
     },
   });
 
+  applyBase();
   bindMapEvents();
   buildFilterChips();
   layoutPanel();
   refresh();
-});
+}
+
+map.on('style.load', onStyleReady);
+
+fallbackTimer = setTimeout(() => {
+  if (inited) return;
+  state.base = 'topo';
+  const libBtn = document.querySelector('#base-switch button[data-base="liberty"]');
+  if (libBtn) { libBtn.disabled = true; libBtn.title = '默认底图加载失败，已切到备用底图'; }
+  toast('默认底图加载超时，已切到备用底图');
+  try {
+    map.setStyle(FALLBACK_STYLE);
+  } catch (_) {
+    onStyleReady();
+  }
+}, FALLBACK_AFTER_MS);
 
 // 顶部筛选条高度会随 chip 换行变化，面板顶边跟着走，别互相压
 function layoutPanel() {
@@ -665,20 +711,7 @@ window.addEventListener('resize', () => {
 });
 
 document.querySelectorAll('#base-switch button').forEach(b => {
-  b.onclick = () => {
-    state.base = b.dataset.base;
-    document.querySelectorAll('#base-switch button').forEach(x => x.classList.toggle('on', x === b));
-    map.setLayoutProperty('base-topo', 'visibility', state.base === 'topo' ? 'visible' : 'none');
-    map.setLayoutProperty('base-sat', 'visibility', state.base === 'sat' ? 'visible' : 'none');
-    if (state.base !== 'liberty') {
-      // 栅格底图压在矢量之上，加不透明度让路线更容易看清
-      map.setPaintProperty('route-line', 'line-opacity', 0.95);
-      map.setPaintProperty('route-sel', 'line-opacity', 0.9);
-    } else {
-      map.setPaintProperty('route-line', 'line-opacity', 0.92);
-      map.setPaintProperty('route-sel', 'line-opacity', 0.85);
-    }
-  };
+  b.onclick = () => { state.base = b.dataset.base; applyBase(); };
 });
 
 /* --------------------------- 地图交互 --------------------------- */

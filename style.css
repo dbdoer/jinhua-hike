@@ -48,6 +48,7 @@ button.primary:hover{background:#047857}
 .base-switch{position:absolute;top:12px;right:12px;display:flex;gap:0;overflow:hidden;border:1px solid var(--line);border-radius:9px}
 .base-switch button{border:none;border-radius:0;padding:5px 11px;background:#fff;color:var(--ink2);font-size:12px}
 .base-switch button.on{background:var(--ink);color:#fff}
+.base-switch button:disabled{opacity:.38;cursor:not-allowed}
 
 /* 窄屏折叠按钮：宽屏不出现（样式在下面的 media query 里打开） */
 .filter-toggle{display:none;align-items:center;gap:5px;white-space:nowrap}
