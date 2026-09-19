@@ -54,10 +54,6 @@ def child_text(el, name):
     return None
 
 
-def all_text(el, name):
-    return [kids(el, name)[0].text.strip() if kids(el, name) else None for _ in ()] or None
-
-
 def haversine(lat1, lon1, lat2, lon2):
     R = 6371.0088
     p1, p2 = math.radians(lat1), math.radians(lat2)
@@ -325,7 +321,7 @@ def parse_gpx(path):
         difficulty, diff_reason = "困难", "距离>15km 或爬升>900m"
 
     family_hi = (dist_km <= 8 and asc_m <= 400 and (hours is None or hours <= 5))
-    family = True if family_hi else (None if (dist_km > 12 or asc_m > 700) else None)
+    family = True if family_hi else None
 
     blob = desc + " " + " ".join(w["name"] + w["desc"] for w in wpts) + " " + " ".join(tags)
     has_water = True if any(k in blob for k in WATER_KEYS) else None

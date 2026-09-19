@@ -176,14 +176,3 @@ python tools/check_gpx_manifest.py --write
 # 5. 本地 serve.bat 看一眼，提交
 ```
 
-## 已知问题
-
-代码里几处小瑕疵，记下来免得下次又踩：
-
-- `build_routes.py` 的 `all_text()` 是**死代码**：循环体遍历空元组 `for _ in ()`，
-  恒定返回 `None`，且无人调用。
-- 同文件里 `family` 那个三元表达式的右支是 `(None if … else None)`，恒为 `None`，
-  实际等同于 `family = True if family_hi else None`，外层嵌套判断是多余的。
-- `check_dupes.py` **没有 `if __name__ == "__main__"` 守卫**，被 import 就会整体跑一遍。
-- 同文件第 5 段的标题写死「与当前已上线的 2 条对比」，实际遍历的是 `data/routes.json`
-  里的**全部**路线。
