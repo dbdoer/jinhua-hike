@@ -1,6 +1,9 @@
 # 截图等自测产物
 shots/
 
+# check_dupes.py 写出的扫描明细
+data/_scan.json
+
 # Python
 __pycache__/
 *.pyc
