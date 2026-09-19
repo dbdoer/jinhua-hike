@@ -4,11 +4,34 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>金华徒步路线 · Demo</title>
-<link rel="stylesheet" href="vendor/maplibre-gl.css">
+<!-- maplibre 的 CSS/JS 改走国内 CDN（七牛 staticfile）：实测完整下载 415ms，
+     源站（GitHub Pages 东京）749ms。CDN 上是同版 5.6.0 的压缩构建。
+     任一路失败都回落到本地 vendor/。兜底函数必须在 <head> 里定义 ——
+     放进 app.js 的话，CDN 秒挂时 app.js 还没执行到，回调就丢了。 -->
+<script>
+window.__fallbackMapCss = function () {
+  var l = document.createElement('link');
+  l.rel = 'stylesheet'; l.href = 'vendor/maplibre-gl.css';
+  document.head.appendChild(l);
+};
+window.__fallbackMapLib = function () {
+  var s = document.createElement('script');
+  s.src = 'vendor/maplibre-gl.js';
+  s.onload = function () { window.__initMap && window.__initMap(); };
+  document.head.appendChild(s);
+};
+</script>
+<!-- preload 转 stylesheet：样式不阻塞渲染。地图本来也是晚一步才建，
+     没必要让首屏列表等这份只给地图用的 CSS。 -->
+<link rel="preload" as="style"
+      href="https://cdn.staticfile.org/maplibre-gl/5.6.0/maplibre-gl.min.css"
+      onload="this.onload=null;this.rel='stylesheet'"
+      onerror="window.__fallbackMapCss()">
 <link rel="stylesheet" href="style.css">
 
 <!-- 底图在别的域，提前建连接。默认样式和瓦片全在 openfreemap，实测境内
      首次连它容易 TLS 断连，早点握手能少等一轮。 -->
+<link rel="preconnect" href="https://cdn.staticfile.org">
 <link rel="preconnect" href="https://tiles.openfreemap.org" crossorigin>
 <link rel="dns-prefetch" href="https://tiles.openfreemap.org">
 <link rel="dns-prefetch" href="https://tile.opentopomap.org">
@@ -114,7 +137,9 @@
      （~130KB）各用 async 单独拉，到位后各自回调；两个齐了才建图。 -->
 <script src="data/routes.index.js"></script>
 <script src="app.js"></script>
-<script async src="vendor/maplibre-gl.js" onload="window.__initMap && window.__initMap()"></script>
+<script async src="https://cdn.staticfile.org/maplibre-gl/5.6.0/maplibre-gl.min.js"
+        onload="window.__initMap && window.__initMap()"
+        onerror="window.__fallbackMapLib()"></script>
 <script async src="data/routes.geom.js" onload="window.__onGeomReady && window.__onGeomReady()"></script>
 </body>
 </html>
