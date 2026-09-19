@@ -41,7 +41,8 @@ jinhua-hike/
 │   ├── check_dupes.py
 │   ├── check_gpx_manifest.py
 │   └── data/jinhua_counties.json   金华 9 个县市区的行政边界多边形
-└── shots/              截图归档（不进版本库）
+├── docs/               README 用的演示截图（demo-*.png，随版本库走）
+└── shots/              自测截图（不进版本库）
 ```
 
 ## 数据管线
