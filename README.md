@@ -18,8 +18,9 @@
 python -m http.server 8012     # 或者手动起
 ```
 
-> 直接双击 `index.html`（`file://`）也能看，因为数据包成了 `data/routes.js` 而不是靠
-> `fetch` 加载 —— 后者在 `file://` 下会被浏览器拦掉。
+> 直接双击 `index.html`（`file://`）也能看，因为数据包成了 `data/routes.index.js` +
+> `data/routes.geom.js`（都是 `window.HIKE_*` 赋值）而不是靠 `fetch` 加载 ——
+> 后者在 `file://` 下会被浏览器拦掉。
 
 ## 目录结构
 

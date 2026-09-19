@@ -1,6 +1,7 @@
 /* =========================================================================
    金华徒步路线 Demo
-   数据：两步路(2bulu)导出的 GPX -> tools/build_routes.py -> data/routes.js
+   数据：两步路(2bulu)导出的 GPX -> tools/build_routes.py
+         -> data/routes.index.js（列表元数据）+ data/routes.geom.js（几何）
    底图：OpenFreeMap(免费无 key) / OpenTopoMap(等高线) / Esri 影像
    ========================================================================= */
 'use strict';
@@ -561,7 +562,7 @@ function renderDetail(r) {
 
     <h4>路线档案 / 数据来源</h4>
     ${navRow('数据来源', esc(s.provider || '—'))}
-    ${navRow('两步路轨迹 ID', s.track_id ? `<a href="https://www.2bulu.com/track/track_detail.htm?trackId=${s.track_id}" target="_blank" rel="noopener">${s.track_id}</a>` : '—')}
+    ${navRow('两步路轨迹 ID', s.track_id ? esc(s.track_id) : '—')}
     ${navRow('上传者', esc(s.creator || '—'))}
     ${navRow('上传者 ID', esc(s.creator_id || '—'))}
     ${navRow('录制 App 版本', esc(s.app_version || '—'))}
