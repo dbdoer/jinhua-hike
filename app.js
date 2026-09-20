@@ -977,8 +977,16 @@ document.querySelectorAll('#base-switch button').forEach(b => {
   b.onclick = () => { state.base = b.dataset.base; applyBase(); track('底图', '切换', state.base); };
 });
 
-// 赏秋点的总开关：显式的开关，不按别的东西自动推断（这站的规矩）
+// 赏秋点的总开关：显式的开关，不按别的东西自动推断（这站的规矩）。
+// 但一个点都还没有时，别把开关和图例留在页面上 —— 点了什么都不会发生，
+// 那种控件比没有更糟。spots.json 里一有数据，它们自己就回来。
 const spotsChk = document.getElementById('f-spots');
+if (!spots.length) {
+  if (spotsChk && spotsChk.parentElement) spotsChk.parentElement.hidden = true;
+  const legendSpot = document.getElementById('legend-spot');
+  if (legendSpot) legendSpot.hidden = true;
+  state.spotsOn = false;
+}
 if (spotsChk) {
   spotsChk.checked = state.spotsOn;
   spotsChk.onchange = e => { state.spotsOn = e.target.checked; refresh(); };
