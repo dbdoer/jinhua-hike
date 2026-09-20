@@ -47,13 +47,15 @@ window.__fallbackMapLib = function () {
 <script>
 window._hmt = window._hmt || [];
 (function () {
-  var HMT_ID = '43c11e72955fe0c3db679ca40c371952';
+  // 写成完整字面量，不做拼接：百度统计后台那个「代码安装检查」是扫页面源码找
+  // hm.js 特征串的，拼接出来的地址它认不出来，会判成「未安装」。行为完全一样。
+  var HMT_SRC = 'https://hm.baidu.com/hm.js?43c11e72955fe0c3db679ca40c371952';
   var injected = false;
   function inject() {
     if (injected) return;
     injected = true;
     var hm = document.createElement('script');
-    hm.src = 'https://hm.baidu.com/hm.js?' + HMT_ID;
+    hm.src = HMT_SRC;
     hm.async = true;
     document.head.appendChild(hm);
   }
