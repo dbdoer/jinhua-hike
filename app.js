@@ -867,7 +867,10 @@ function profileFromGeometry(r) {
 function profileSVG(r) {
   const p = profileFromGeometry(r);
   if (!p || p.length < 3) return '';
-  const W = 344, H = 96, PL = 34, PR = 8, PT = 10, PB = 16;
+  // 画布高度 96 -> 110、顶部内边距 10 -> 24：绘图区高度仍是 110-24-16 = 70，剖面形状
+  // 一个像素都不变，多出来的 14px 是给最高点那个红字标签的 —— 原来标签写 sy-6，
+  // 最高点几乎顶到绘图区上沿，跑到 viewBox 外面去了（1077m 的「1077」被裁掉上半截）。
+  const W = 344, H = 110, PL = 34, PR = 8, PT = 24, PB = 16;
   const xs = p.map(d => d[0]), ys = p.map(d => d[1]);
   const x0 = Math.min(...xs), x1 = Math.max(...xs);
   const y0 = Math.floor(Math.min(...ys) / 50) * 50, y1 = Math.ceil(Math.max(...ys) / 50) * 50;
@@ -876,6 +879,8 @@ function profileSVG(r) {
   const line = p.map((d, i) => (i ? 'L' : 'M') + sx(d[0]).toFixed(1) + ' ' + sy(d[1]).toFixed(1)).join(' ');
   const area = `${line} L ${sx(x1).toFixed(1)} ${H - PB} L ${sx(x0).toFixed(1)} ${H - PB} Z`;
   const hi = p.reduce((a, b) => (b[1] > a[1] ? b : a), p[0]);
+  // 峰值标签也要防左右出框：那条最高点落在路线最左/最右时，text-anchor=middle 会写出去
+  const hiX = Math.min(W - PR - 16, Math.max(PL + 16, sx(hi[0])));
   return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;margin-top:6px">
     <defs><linearGradient id="pg" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#059669" stop-opacity=".45"/>
@@ -884,7 +889,7 @@ function profileSVG(r) {
     <path d="${line}" fill="none" stroke="#047857" stroke-width="1.6"/>
     <line x1="${PL}" y1="${H - PB}" x2="${W - PR}" y2="${H - PB}" stroke="#e2e8f0"/>
     <circle cx="${sx(hi[0]).toFixed(1)}" cy="${sy(hi[1]).toFixed(1)}" r="3" fill="#b91c1c"/>
-    <text x="${sx(hi[0]).toFixed(1)}" y="${(sy(hi[1]) - 6).toFixed(1)}" font-size="10" text-anchor="middle" fill="#b91c1c">${Math.round(hi[1])}m</text>
+    <text x="${hiX.toFixed(1)}" y="${(sy(hi[1]) - 6).toFixed(1)}" font-size="10" text-anchor="middle" fill="#b91c1c">${Math.round(hi[1])}m</text>
     <text x="${PL - 4}" y="${PT + 8}" font-size="10" text-anchor="end" fill="#94a3b8">${y1}</text>
     <text x="${PL - 4}" y="${H - PB}" font-size="10" text-anchor="end" fill="#94a3b8">${y0}</text>
     <text x="${PL}" y="${H - 4}" font-size="10" fill="#94a3b8">0 km</text>
