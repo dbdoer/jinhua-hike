@@ -528,6 +528,7 @@ function select(id) {
   if (wasCollapsed) setPanelCollapsed(false);
   if (map && !wasCollapsed) fitToRoute(r, 900);
   renderDetail(r);
+  track('路线', '点开', r.name);
   refresh();
   if (map && state.wpt) {
     map.setFilter('anno-dot', ['==', ['get', 'route_id'], id]);
@@ -676,6 +677,17 @@ function renderDetail(r) {
   document.getElementById('btn-back').hidden = false;
 }
 
+/* --------------------------- 访问统计 ---------------------------
+   百度统计的脚本是**延迟注入**的（见 index.html），所以这里只管往 _hmt 队列里 push；
+   脚本到位后百度统计会把队列补发。没装统计、或脚本被拦下来时，这两行静默无反应 ——
+   统计绝不能连累页面本身。 */
+function track(cat, action, label) {
+  try {
+    (window._hmt = window._hmt || []).push(
+      ['_trackEvent', String(cat), String(action), String(label == null ? '' : label)]);
+  } catch (_) { /* 统计坏了不能影响页面 */ }
+}
+
 /* --------------------------- 赏秋点 ---------------------------
    数据来自 spots/spots.json（人工打点，见 tools/build_spots.py）。
    和路线分开走：路线是「一条线」，赏秋点是「一个点」，谁也不参与对方的筛选。
@@ -732,6 +744,7 @@ function selectSpot(id) {
   if (wasCollapsed) setPanelCollapsed(false);
   else fitToSpot(s, 800);
   renderSpotDetail(s);
+  track('赏秋点', '点开', s.name);
 }
 
 /* 每张图底下必须有一行来源。credit 为 null 是约定：本站自己拍的。
@@ -911,7 +924,10 @@ document.getElementById('f-sort').onchange = e => { state.sort = e.target.value;
 let qt = null;
 document.getElementById('f-q').oninput = e => {
   clearTimeout(qt);
-  qt = setTimeout(() => { state.q = e.target.value; refresh(); }, 180);
+  qt = setTimeout(() => {
+    state.q = e.target.value; refresh();
+    if (state.q.trim()) track('搜索', '关键词', state.q.trim());
+  }, 180);
 };
 document.getElementById('btn-reset').onclick = () => {
   state.regions.clear(); state.diffs.clear();
@@ -951,7 +967,7 @@ window.addEventListener('resize', () => {
 });
 
 document.querySelectorAll('#base-switch button').forEach(b => {
-  b.onclick = () => { state.base = b.dataset.base; applyBase(); };
+  b.onclick = () => { state.base = b.dataset.base; applyBase(); track('底图', '切换', state.base); };
 });
 
 // 赏秋点的总开关：显式的开关，不按别的东西自动推断（这站的规矩）
