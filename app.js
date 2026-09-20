@@ -61,20 +61,14 @@ const state = {
 };
 let lastRegionSig = '';
 
-/* ------------------------- 管理通道（导入 GPX） -------------------------
-   访客看不到导入入口。说清楚，这不是权限控制 —— 静态站没有服务端，前端任何
-   开关都能被查看源码、改一行 JS 绕过。真正的守卫是 GitHub 仓库的写权限：
-   只有 push 进仓库的路线才会出现在所有人面前。访客即使真调用了导入，
-   结果也只活在他自己浏览器的内存里，刷新即消失，不上传、别人看不到。
+/* ------------------------- 导入 GPX：入口已下线 -------------------------
+   站点上不再有任何「导入」入口 —— 按钮、文件选择、拖放蒙层全部去掉。
+   导进来的路线只活在浏览器内存里，刷新即消失、不上传、别人看不到。摆着那么
+   一个按钮，用户会以为站点能上传自己的轨迹，误会大于用途。
 
-   开启：带 ?admin=1 打开一次，本机记住；?admin=0 关掉。 */
-const ADMIN_KEY = 'jinhua-hike-admin';
-const isAdmin = (() => {
-  const q = new URLSearchParams(location.search).get('admin');
-  if (q === '1') { try { localStorage.setItem(ADMIN_KEY, '1'); } catch (_) { /* 隐私模式下忽略 */ } return true; }
-  if (q === '0') { try { localStorage.removeItem(ADMIN_KEY); } catch (_) { } return false; }
-  try { return localStorage.getItem(ADMIN_KEY) === '1'; } catch (_) { return false; }
-})();
+   解析与导入的实现（importFiles / parseGpxText）保留在下面，没删：将来真要给
+   用户上传能力，得接后端（Worker 持 token 把 GPX 提到仓库、触发重建），
+   到时候把入口重新接上这两个函数就行。 */
 
 /* ----------------------------- 地图 -----------------------------
    建图推迟到 initMap()：列表不依赖地图，得先让它出来。maplibre 有 ~250KB，
@@ -467,7 +461,7 @@ function refresh() {
   document.getElementById('cnt-hit').textContent = list.length;
   document.getElementById('cnt-all').textContent = '/ ' + routes.length + ' 条路线';
 
-  // 导入新轨迹会带来新区域，chip 要跟着重建，否则新区域没法筛
+  // 数据集里出现新区域时 chip 要跟着重建，否则新区域没法筛
   const sig = uniq('region').sort().join('|');
   if (sig !== lastRegionSig) { lastRegionSig = sig; buildFilterChips(); }
   updateChips();
@@ -485,14 +479,7 @@ function refresh() {
 function renderList(list) {
   const box = document.getElementById('list');
   if (!list.length) {
-    box.innerHTML = isAdmin
-      ? `<div class="empty">
-           没有匹配的路线。<br><br>
-           当前数据集共 <b>${routes.length}</b> 条。加新路线：把两步路导出的 GPX 丢进
-           <code>gpx/</code>，跑 <code>python tools/build_routes.py</code> 再 push。<br><br>
-           或者点右上角 <code>导入 GPX</code> 先看一眼效果 —— 只在本机内存里，刷新即消失。
-         </div>`
-      : `<div class="empty">
+    box.innerHTML = `<div class="empty">
            没有匹配的路线。<br><br>
            当前数据集共 <b>${routes.length}</b> 条，全部来自两步路用户上传的轨迹。
          </div>`;
@@ -1037,47 +1024,11 @@ function bindMapEvents() {
   map.on('mouseleave', 'anno-dot', () => { map.getCanvas().style.cursor = ''; });
 }
 
-/* --------------------------- 导入 GPX（仅管理通道） --------------------------- */
-const btnImport = document.getElementById('btn-import');
-if (isAdmin) {
-  btnImport.hidden = false;
-  btnImport.title = '管理通道：导入只在本机内存里，不会上传';
-  btnImport.onclick = () => document.getElementById('file-input').click();
-  document.getElementById('file-input').onchange = e => {
-    importFiles([...e.target.files]);
-    e.target.value = '';
-  };
-} else {
-  btnImport.remove();
-  document.getElementById('file-input').remove();
-}
-
-// 拖放导入：用计数器判断是否真的离开了窗口，别用 relatedTarget（不可靠）
-let dragDepth = 0;
-const dropEl = document.getElementById('drop');
-// 不管是不是管理员都要 preventDefault：不然访客往页面里拖个文件，
-// 浏览器会直接跳走打开那个文件，地图就没了。
-window.addEventListener('dragenter', e => {
-  e.preventDefault();
-  if (!isAdmin) return;
-  dragDepth++; dropEl.hidden = false;
-});
+/* 拖放：只拦默认行为，不再接受文件。不拦的话，用户往页面里拖个 GPX，
+   浏览器会直接跳走打开那个文件，地图就没了 —— 这纯是防御动作，跟「导入」无关。 */
+window.addEventListener('dragenter', e => { e.preventDefault(); });
 window.addEventListener('dragover', e => { e.preventDefault(); });
-window.addEventListener('dragleave', e => {
-  e.preventDefault();
-  if (!isAdmin) return;
-  dragDepth = Math.max(0, dragDepth - 1);
-  if (!dragDepth) dropEl.hidden = true;
-});
-window.addEventListener('drop', e => {
-  e.preventDefault();
-  if (!isAdmin) return;
-  dragDepth = 0; dropEl.hidden = true;
-  importFiles([...(e.dataTransfer?.files || [])].filter(f => /\.gpx$/i.test(f.name)));
-});
-// 兜底：窗口失焦/ESC 也收起来，免得再出现蒙层赖着不走
-window.addEventListener('blur', () => { dragDepth = 0; dropEl.hidden = true; });
-window.addEventListener('keydown', e => { if (e.key === 'Escape') { dragDepth = 0; dropEl.hidden = true; } });
+window.addEventListener('drop', e => { e.preventDefault(); });
 
 async function importFiles(files) {
   if (!files.length) return toast('没读到 .gpx 文件');

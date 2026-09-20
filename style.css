@@ -175,11 +175,10 @@ button.primary:hover{background:#047857}
   background:var(--ink);color:#fff;padding:9px 16px;border-radius:10px;font-size:13px;
   box-shadow:var(--shadow);
 }
-.drop{position:absolute;inset:0;z-index:8;background:rgba(5,150,105,.14);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;pointer-events:none}
-.drop div{border:2px dashed var(--green);border-radius:16px;padding:28px 40px;background:#fff;font-size:16px;color:var(--green)}
+.drop,.drop div{display:none}   /* 导入入口已下线（2026-09），样式留着以防将来接后端上传 */
 .maplibregl-popup-content{font:13px/1.5 -apple-system,"Microsoft YaHei",sans-serif;border-radius:10px;padding:9px 12px}
 @media (max-width:900px){
-  /* 窄屏：筛选条件默认收成一行——品牌 + 筛选按钮 + 搜索 + 导入，其余点「筛选」再展开 */
+  /* 窄屏：筛选条件默认收成一行——品牌 + 筛选按钮 + 搜索，其余点「筛选」再展开 */
   .bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 10px}
   .bar:not(.open){flex-wrap:nowrap}
   .brand{flex:0 0 auto;margin:0;font-size:13.5px}

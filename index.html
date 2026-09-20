@@ -130,9 +130,6 @@ window._hmt = window._hmt || [];
     </div>
 
     <button id="btn-reset" class="ghost adv">重置</button>
-    <!-- 导入仅管理通道可见：默认 hidden，?admin=1 打开后由 app.js 显出来 -->
-    <button id="btn-import" class="primary" hidden><span class="only-wide">导入 GPX</span><span class="only-narrow">导入</span></button>
-    <input type="file" id="file-input" accept=".gpx" multiple hidden>
   </div>
 
   <!-- 右上角这组管「看什么」，跟上面那排筛选（筛什么）分开 -->
@@ -172,7 +169,7 @@ window._hmt = window._hmt || [];
 </div>
 
 <div id="toast" class="toast" hidden></div>
-<div id="drop" class="drop" hidden><div>松手即导入 GPX 轨迹</div></div>
+
 
 <!-- 列表元数据 + 逻辑先上（首屏只要这两样）。maplibre（~250KB）和几何
      （~130KB）各用 async 单独拉，到位后各自回调；两个齐了才建图。 -->
