@@ -36,6 +36,21 @@ function attachGeometry() {
     const it = g[r.id];
     if (it) { r.geometry = it.geometry; r.annotations = it.annotations || []; }
   });
+  // 几何（~130KB）比列表晚好几秒，用户完全可能在它到之前就点开了一条路线 —— 那时
+  // 渲染出来的是「0 个上传者标注点」「这条轨迹没有标注点」，剖面也是空的。
+  // 几何一到就得把已经打开的那页重画一遍，否则用户盯着一个假的空详情，等多久都不变。
+  // 位置在 attachGeometry 里而不是 __onGeomReady 里：几何先到、maplibre 后到时，
+  // 真正把几何挂上去的是这里（bootMap 要两样齐了才跑）。renderDetail 自己重新绑
+  // 事件，重复调用是安全的。
+  if (state.selected) {
+    const box = document.getElementById('detail');
+    const r = routes.find(x => x.id === state.selected);
+    if (box && !box.hidden && r) {
+      const keepScroll = box.scrollTop;   // 别把正在读的人弹回页首
+      renderDetail(r);
+      box.scrollTop = keepScroll;
+    }
+  }
 }
 const state = {
   regions: new Set(), diffs: new Set(),
@@ -1124,7 +1139,12 @@ function parseGpxText(text, filename) {
     if (isFinite(a) && isFinite(b)) hours = +(((b - a) / 3600000).toFixed(2));
   } else if (ext.TimeUsed && +ext.TimeUsed > 0) hours = +(ext.TimeUsed / 3600000).toFixed(2);
 
-  const name = ext.name || filename.replace(/\.gpx$/i, '');
+  // 与 build_routes.py 同口径：上传者在两步路里没命名时，导出会拿录制时刻当 name
+  // （实测「2025-03-20 10:07:11」），那不该当路线名用，退回文件名。
+  const rawName = (ext.name || '').trim();
+  const name = (!rawName || /^\d{4}-\d{2}-\d{2}([ T]\d{2}:\d{2}(:\d{2})?)?$/.test(rawName))
+    ? filename.replace(/\.gpx$/i, '')
+    : rawName;
   const desc = ext.description || '';
   const tags = (ext.TrackTags || '').split(/[,，、\s]+/).filter(Boolean);
   // 与 build_routes.py 同口径的第一步：PosStartName 里含且仅含一个县名才认。

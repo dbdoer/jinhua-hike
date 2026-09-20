@@ -1,7 +1,7 @@
 {
  "note": "gpx/ 里原始 GPX 文件的字节指纹。任何一项对不上，都意味着「下载原始 GPX」给出去的已经不是上传者导出的那串字节。.gitattributes 里 *.gpx 标了 -text，禁止 git 做行尾转换 —— 别去掉它。用 python tools/check_gpx_manifest.py 校验。",
  "algorithm": "sha256",
- "count": 56,
+ "count": 58,
  "files": [
   {
    "file": "三县第一潭三瀑.gpx",
@@ -72,6 +72,13 @@
    "sha256": "cbc148585307df6ce9e66e08b5298833cc35653afdf6dad5b619cb5b210c77ff",
    "track_id": "88940116",
    "name": "兰溪三峰尖"
+  },
+  {
+   "file": "兰溪芝堰飞桥顶环线.gpx",
+   "bytes": 177395,
+   "sha256": "98a5b7046c55db179fe337a4179147f590e1d0302d7019e0b8dfdf88631294d9",
+   "track_id": "66435210",
+   "name": "2025-03-20 10:07:11"
   },
   {
    "file": "兰溪铁甲山260614.gpx",
@@ -345,6 +352,13 @@
    "sha256": "bb51d2cefbcecbaae097a612a9ca120839f37bd673e54176f1d9fe3f13d0d188",
    "track_id": "85871840",
    "name": "金兰古道小环线260614"
+  },
+  {
+   "file": "金华兰溪市六洞山小环线.gpx",
+   "bytes": 156844,
+   "sha256": "f781ecaf76fe7008b27c1f83c27d69c58f285a5dd2e0abe9def6af31864cae8c",
+   "track_id": "88551305",
+   "name": "金华兰溪市六洞山小环线"
   },
   {
    "file": "金华南山四顾屏环线.gpx",
