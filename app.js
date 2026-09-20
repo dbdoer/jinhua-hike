@@ -2,7 +2,8 @@
    金华徒步路线
    数据：两步路(2bulu)导出的 GPX -> tools/build_routes.py
          -> data/routes.index.js（列表元数据）+ data/routes.geom.js（几何）
-   底图：OpenFreeMap(免费无 key) / OpenTopoMap(等高线) / Esri 影像
+   底图：OpenFreeMap(免费无 key) / OpenTopoMap(等高线) / 卫星影像
+   赏秋点：spots/spots.json（人工打点）-> tools/build_spots.py -> data/spots.js
    ========================================================================= */
 'use strict';
 
@@ -13,6 +14,16 @@ const JINHUA = {
   // 金华市范围，留一点余量，防止用户把地图拖到天涯海角
   bounds: [[119.05, 28.42], [120.98, 29.82]],
 };
+
+/* 赏秋点：本站自己实地打的位置，跟两步路那批路线是两回事。
+   源数据在 spots/spots.json（人工维护、坐标手标、机器只校验），
+   走 tools/build_spots.py 生成 data/spots.js —— 也用 <script> 加载，file:// 能跑。 */
+const KIND_COLOR = {
+  '水杉': '#c2410c', '银杏': '#ca8a04', '红枫': '#b91c1c', '枫香': '#dc2626',
+  '乌桕': '#7c2d12', '芦花': '#a8a29e', '稻田': '#d97706', '油菜花': '#65a30d',
+  '其他': '#ea580c',
+};
+const spots = ((window.SPOT_DATA || {}).spots || []).slice();
 
 /* 列表只要元数据（routes.index.js，~20KB）；几何（routes.geom.js，~130KB）
    晚一步到，到了再挂上去 —— 首屏不必等它，反正地图本来也得等 maplibre。 */
@@ -31,6 +42,7 @@ const state = {
   family: false, water: false, wpt: true,
   dist: 'all', q: '', sort: 'distance',
   selected: null, base: 'liberty',
+  spotsOn: true, spotSel: null,
 };
 let lastRegionSig = '';
 
@@ -157,6 +169,33 @@ function onStyleReady() {
       'circle-color': '#7c3aed', 'circle-stroke-color': '#fff', 'circle-stroke-width': 1.6,
       'circle-opacity': 0.95,
     },
+  });
+
+  // 4) 赏秋点。它是独立的点图层，不参与路线的筛选，也不进左侧列表
+  map.addSource('spots', { type: 'geojson', data: emptyFC, promoteId: 'id' });
+  map.addSource('spotSel', { type: 'geojson', data: emptyFC });
+  map.addLayer({
+    id: 'spot-halo', type: 'circle', source: 'spotSel',
+    paint: {
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 10, 14, 16, 22],
+      'circle-color': '#fff', 'circle-opacity': .9,
+    },
+  });
+  map.addLayer({
+    id: 'spot-dot', type: 'circle', source: 'spots',
+    paint: {
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 5, 13, 8, 16, 11],
+      'circle-color': ['get', 'color'],
+      'circle-stroke-color': '#fff', 'circle-stroke-width': 2,
+    },
+  });
+  map.addLayer({
+    id: 'spot-label', type: 'symbol', source: 'spots', minzoom: 10.5,
+    layout: {
+      'text-field': ['get', 'name'], 'text-font': FONT, 'text-size': 12,
+      'text-offset': [0, -1.15], 'text-anchor': 'bottom', 'text-allow-overlap': false,
+    },
+    paint: { 'text-color': '#7c2d12', 'text-halo-color': '#fff', 'text-halo-width': 1.6 },
   });
 
   applyBase();
@@ -323,6 +362,12 @@ function fitToRoute(r, duration) {
   map.fitBounds(boundsOf(r), { padding: fitPadding(), maxZoom: 17, duration: duration || 900 });
 }
 
+// 赏秋点是个点，fitBounds 对它没意义，直接飞过去。留白同样走 fitPadding()。
+function fitToSpot(s, duration) {
+  if (!map || !s) return;
+  map.flyTo({ center: [s.lon, s.lat], zoom: 14, padding: fitPadding(), duration: duration || 800 });
+}
+
 /* 窄屏：把面板收成一条，给地图腾地方。
    收起来之后必须按新的可视区把已选路线重新摆一次 —— 否则路线还缩在上半屏，
    底下空一大块，「腾地方」就白腾了。 */
@@ -336,10 +381,11 @@ function setPanelCollapsed(collapsed) {
   btn.title = collapsed ? '展开面板' : '收起面板';
   btn.setAttribute('aria-expanded', String(!collapsed));
   const r = state.selected ? routes.find(x => x.id === state.selected) : null;
-  if (r) {
+  const sp = state.spotSel ? spots.find(x => x.id === state.spotSel) : null;
+  if (r || sp) {
     // 等高度过渡走完再量 fitPadding —— 量到中途尺寸会算歪
     clearTimeout(collapseTimer);
-    collapseTimer = setTimeout(() => fitToRoute(r, 500), 260);
+    collapseTimer = setTimeout(() => { if (r) fitToRoute(r, 500); else fitToSpot(sp, 500); }, 260);
   }
 }
 document.getElementById('btn-collapse').onclick = () => {
@@ -382,6 +428,24 @@ function refresh() {
     map.setFilter('anno-dot', state.wpt && state.selected
       ? ['==', ['get', 'route_id'], state.selected]
       : ['==', ['get', 'id'], '__none__']);
+
+    // 赏秋点：只受自己那个开关控制，路线怎么筛都不影响它
+    map.setLayoutProperty('spot-dot', 'visibility', state.spotsOn ? 'visible' : 'none');
+    map.setLayoutProperty('spot-label', 'visibility', state.spotsOn ? 'visible' : 'none');
+    if (!state.spotsOn) map.setLayoutProperty('spot-halo', 'visibility', 'none');
+    else map.setLayoutProperty('spot-halo', 'visibility', 'visible');
+    map.getSource('spots').setData({
+      type: 'FeatureCollection',
+      features: state.spotsOn ? spots.map(s => ({
+        type: 'Feature', id: s.id,
+        properties: {
+          id: s.id, name: s.name, kind: s.kind,
+          color: KIND_COLOR[s.kind] || KIND_COLOR['其他'],
+          season: seasonText(s),
+        },
+        geometry: { type: 'Point', coordinates: [s.lon, s.lat] },
+      })) : [],
+    });
   }
 
   renderList(list);
@@ -447,6 +511,9 @@ function select(id) {
   const r = routes.find(x => x.id === id);
   if (!r) return;
   state.selected = id;
+  // 详情面板只有一块 378px 的地方，路线和赏秋点两个选中必须互斥
+  state.spotSel = null;
+  if (map) map.getSource('spotSel').setData(emptyFC);
   if (map) {
     map.getSource('sel').setData({
       type: 'FeatureCollection',
@@ -455,7 +522,11 @@ function select(id) {
   }
   // 留白必须按屏幕实际算，别写死：原来这里是 { top:200, right:430, bottom:70, left:70 }，
   // 那是给桌面右侧面板配的，窄屏下把可用宽度压成负的，地图干脆不动。见 fitToRoute()。
-  fitToRoute(r, 900);
+  // 窄屏收起状态下点中一条：得先把面板放出来，否则详情渲染在一个 48px 的横条里，
+  // 用户以为点了没反应。展开本身会触发一次按新可视区的重摆，那就别再自己 fit 一遍。
+  const wasCollapsed = document.getElementById('panel').classList.contains('collapsed');
+  if (wasCollapsed) setPanelCollapsed(false);
+  if (map && !wasCollapsed) fitToRoute(r, 900);
   renderDetail(r);
   refresh();
   if (map && state.wpt) {
@@ -466,9 +537,10 @@ function select(id) {
 
 function backToList() {
   state.selected = null;
+  state.spotSel = null;
   // 收起状态下点「返回列表」得先把面板放出来，否则列表是隐藏的，用户对着一条空条发呆
   setPanelCollapsed(false);
-  if (map) map.getSource('sel').setData(emptyFC);
+  if (map) { map.getSource('sel').setData(emptyFC); map.getSource('spotSel').setData(emptyFC); }
   document.getElementById('detail').hidden = true;
   document.getElementById('list').hidden = false;
   document.getElementById('btn-back').hidden = true;
@@ -599,6 +671,137 @@ function renderDetail(r) {
     };
   });
 
+  document.getElementById('detail').hidden = false;
+  document.getElementById('list').hidden = true;
+  document.getElementById('btn-back').hidden = false;
+}
+
+/* --------------------------- 赏秋点 ---------------------------
+   数据来自 spots/spots.json（人工打点，见 tools/build_spots.py）。
+   和路线分开走：路线是「一条线」，赏秋点是「一个点」，谁也不参与对方的筛选。
+   唯一共用的是那块详情面板，所以两者选中要互斥。 */
+
+const SEG_LABEL = ['上旬', '中旬', '下旬'];
+
+// 「11-中」-> 从 1 月起算的旬序号（1 月上旬 = 0）。构建期已经算好 best_i_*，
+// 前端不重算一遍，免得同一个字段出现两套口径。
+function todaySeg(d) {
+  return d.getMonth() * 3 + (d.getDate() <= 10 ? 0 : d.getDate() <= 20 ? 1 : 2);
+}
+
+function segText(i) {
+  return i == null ? null : (Math.floor(i / 3) + 1) + '月' + SEG_LABEL[i % 3];
+}
+
+function bestRange(s) {
+  return (s.best_i_from == null || s.best_i_to == null)
+    ? null : segText(s.best_i_from) + ' ~ ' + segText(s.best_i_to);
+}
+
+/* 当季文案 —— 赏秋图的价值全落在这一句上。
+   十月打开和十二月打开，看到的应该是不同的答案；否则这张图就只是一堆钉子。
+   刻度用「旬」：再细没人维护得起，再粗（按月）就不够用。 */
+function seasonText(s) {
+  const f = s.best_i_from, t = s.best_i_to;
+  if (f == null || t == null) return null;
+  const now = todaySeg(new Date());
+  if (now >= f && now <= t) return '正在最佳观赏期（' + bestRange(s) + '）';
+  if (now < f) {
+    const d = f - now;
+    return d <= 18 ? '还要等约 ' + (d * 10) + ' 天（' + bestRange(s) + '）'
+      : '还没到季节（最佳期 ' + bestRange(s) + '）';
+  }
+  const d = now - t;
+  return d <= 6 ? '刚过最佳期（' + bestRange(s) + '）' : '今年这季已过（最佳期 ' + bestRange(s) + '）';
+}
+
+function selectSpot(id) {
+  const s = spots.find(x => x.id === id);
+  if (!s) return;
+  state.spotSel = id;
+  state.selected = null;
+  if (map) {
+    map.getSource('sel').setData(emptyFC);
+    map.getSource('spotSel').setData({
+      type: 'FeatureCollection',
+      features: [{ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [s.lon, s.lat] } }],
+    });
+  }
+  // 同一个理由：窄屏收起时点它，先把面板放出来再飞（见 select()）
+  const wasCollapsed = document.getElementById('panel').classList.contains('collapsed');
+  if (wasCollapsed) setPanelCollapsed(false);
+  else fitToSpot(s, 800);
+  renderSpotDetail(s);
+}
+
+/* 每张图底下必须有一行来源。credit 为 null 是约定：本站自己拍的。
+   别人的图则必须带 credit（授权人）+ license，这是 build_spots.py 卡死的规矩。 */
+function photoBlock(s) {
+  const ps = s.photos || [];
+  if (!ps.length) return '<p style="color:#94a3b8">这个点还没有图。</p>';
+  return ps.map(p => `
+    <figure class="shot">
+      <a href="${esc(p.src)}" target="_blank" rel="noopener">
+        <img src="${esc(p.src)}" alt="${esc(p.caption || s.name)}" loading="lazy">
+      </a>
+      ${(p.caption || p.shot_at) ? `<figcaption>${esc(p.caption || '')}${
+        p.shot_at ? `<span class="date">${esc(p.shot_at)}</span>` : ''}</figcaption>` : ''}
+      <div class="credit">${p.credit
+        ? '摄影：' + (p.credit_url
+          ? `<a href="${esc(p.credit_url)}" target="_blank" rel="noopener">${esc(p.credit)}</a>`
+          : esc(p.credit)) + (p.license ? ' · ' + esc(p.license) : '')
+        : '本站自摄'}</div>
+    </figure>`).join('');
+}
+
+function renderSpotDetail(s) {
+  const season = seasonText(s);
+  const nav = [
+    `<a href="https://uri.amap.com/marker?position=${s.lon},${s.lat}&name=${encodeURIComponent(s.name)}&coordinate=wgs84&callnative=1&src=jinhua-autumn-map" target="_blank" rel="noopener">高德导航到这个点</a>`,
+    `<button data-copy="${s.lat},${s.lon}">复制 WGS-84 坐标</button>`,
+    `<button data-locate="${s.id}">地图上定位</button>`,
+  ];
+  document.getElementById('detail').innerHTML = `
+    <h2>${esc(s.name)}${s.example ? '<span class="badge ex">示例</span>' : ''}</h2>
+    <div class="sub">${esc(s.kind)} · ${esc(s.region || '区域未知')} · 本站实地打点</div>
+
+    ${season ? `<div class="season">${esc(season)}</div>` : ''}
+
+    ${photoBlock(s)}
+
+    <h4>这里是什么样</h4>
+    <p>${esc(s.intro)}</p>
+
+    <h4>什么时候来看</h4>
+    <div class="grid">
+      <div><span>最佳观赏期</span><b style="font-size:13px">${bestRange(s) || '未填'}</b></div>
+      <div><span>最后一次确认</span><b style="font-size:13px">${s.verified_at || '未填'}</b></div>
+      <div><span>坐标精度</span><b style="font-size:13px">${s.coord_acc_m != null ? '±' + s.coord_acc_m + ' m' : '未填'}</b></div>
+    </div>
+    ${s.season_note ? `<div class="note">今年的实际情况：${esc(s.season_note)}</div>` : ''}
+
+    <h4>怎么去</h4>
+    <p>${s.access ? esc(s.access) : '<span style="color:#94a3b8">没写到达方式。</span>'}</p>
+    <div class="grid" style="grid-template-columns:1fr 1fr">
+      <div><span>坐标 WGS-84（纬度, 经度）</span><b style="font-size:12px">${s.lat.toFixed(5)}, ${s.lon.toFixed(5)}</b></div>
+      <div><span>坐标来源</span><b style="font-size:12px">${esc(s.coord_src || '—')}</b></div>
+    </div>
+    <div class="links">${nav.join('')}</div>
+
+    <div class="note" style="margin-top:14px">
+      这个点是本站自己实地打的位置，拍摄时间见每张图下方。树什么时候变色年年不同，
+      出发前再看一眼本周的实际情况。坐标精度一栏写的是打点时的定位误差，不是树的分布范围。
+    </div>
+  `;
+  document.getElementById('detail').querySelectorAll('[data-copy]').forEach(b => {
+    b.onclick = () => copy(b.dataset.copy);
+  });
+  document.getElementById('detail').querySelectorAll('[data-locate]').forEach(b => {
+    b.onclick = () => {
+      const ss = spots.find(x => x.id === b.dataset.locate);
+      if (ss && map) map.flyTo({ center: [ss.lon, ss.lat], zoom: 14, padding: fitPadding() });
+    };
+  });
   document.getElementById('detail').hidden = false;
   document.getElementById('list').hidden = true;
   document.getElementById('btn-back').hidden = false;
@@ -751,16 +954,30 @@ document.querySelectorAll('#base-switch button').forEach(b => {
   b.onclick = () => { state.base = b.dataset.base; applyBase(); };
 });
 
+// 赏秋点的总开关：显式的开关，不按别的东西自动推断（这站的规矩）
+const spotsChk = document.getElementById('f-spots');
+if (spotsChk) {
+  spotsChk.checked = state.spotsOn;
+  spotsChk.onchange = e => { state.spotsOn = e.target.checked; refresh(); };
+}
+
 /* --------------------------- 地图交互 --------------------------- */
 function bindMapEvents() {
   const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false });
   const ROUTE_LAYERS = ['route-line'];
 
   map.on('mousemove', e => {
-    const f = map.queryRenderedFeatures(e.point, { layers: ROUTE_LAYERS })[0];
-    map.getCanvas().style.cursor = f ? 'pointer' : '';
+    // 赏秋点压在路线上面，命中它就不再管路线，免得两个气泡打架
+    const sp = state.spotsOn ? map.queryRenderedFeatures(e.point, { layers: ['spot-dot'] })[0] : null;
+    const f = sp ? null : map.queryRenderedFeatures(e.point, { layers: ROUTE_LAYERS })[0];
+    map.getCanvas().style.cursor = (sp || f) ? 'pointer' : '';
     map.setFilter('route-hover', ['==', ['get', 'id'], f ? f.properties.id : '__none__']);
-    if (f) {
+    if (sp) {
+      // 气泡里只放两样：是什么树、现在是不是时候
+      popup.setLngLat(e.lngLat).setHTML(
+        `<b>${esc(sp.properties.name)}</b><br>${esc(sp.properties.kind)}<br>
+         <span style="color:#64748b">${esc(sp.properties.season || '最佳观赏期未填')}</span>`).addTo(map);
+    } else if (f) {
       popup.setLngLat(e.lngLat).setHTML(
         `<b>${esc(f.properties.name)}</b><br>${f.properties.distance_km} km · 爬升 ${f.properties.ascent_m} m<br>
          <span style="color:#64748b">${esc(f.properties.region || '')} · ${f.properties.difficulty}</span>`).addTo(map);
@@ -769,6 +986,9 @@ function bindMapEvents() {
   map.on('mouseleave', () => { popup.remove(); map.setFilter('route-hover', ['==', ['get', 'id'], '__none__']); });
   map.on('click', 'route-line', e => {
     if (e.features[0]) select(e.features[0].properties.id);
+  });
+  map.on('click', 'spot-dot', e => {
+    if (e.features[0]) selectSpot(e.features[0].properties.id);
   });
 
   map.on('click', 'anno-dot', e => {
@@ -982,4 +1202,6 @@ function toast(msg) {
   clearTimeout(tt);
   tt = setTimeout(() => { el.hidden = true; }, 3600);
 }
-window.__hike = { state, get routes() { return routes; }, filtered, select, map };
+// map 得用 getter：这个对象是脚本末尾求值的，那时 map 还是 null，写死就永远是 null
+window.__hike = { state, get routes() { return routes; }, get spots() { return spots; },
+  filtered, select, selectSpot, get map() { return map; } };

@@ -45,7 +45,14 @@ button.ghost{color:var(--ink2)}
 button.ghost:hover{background:#f1f5f9}
 button.primary{background:var(--green);border-color:var(--green);color:#fff}
 button.primary:hover{background:#047857}
-.base-switch{position:absolute;top:12px;right:12px;display:flex;gap:0;overflow:hidden;border:1px solid var(--line);border-radius:9px}
+/* 右上角工具组：赏秋点开关 + 底图切换。
+   原先 base-switch 自己绝对定位，加个开关就没地方放了 —— 位置改由容器管。 */
+.map-tools{position:absolute;top:12px;right:12px;display:flex;align-items:center;gap:8px;z-index:5}
+.spot-switch{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--ink2);
+  background:#fff;border:1px solid var(--line);border-radius:9px;padding:4px 10px;cursor:pointer;white-space:nowrap}
+.spot-switch input{margin:0;accent-color:var(--amber)}
+.spot-switch:has(input:checked){border-color:var(--amber);color:var(--amber);background:#fffbeb}
+.base-switch{display:flex;gap:0;overflow:hidden;border:1px solid var(--line);border-radius:9px;background:#fff}
 .base-switch button{border:none;border-radius:0;padding:5px 11px;background:#fff;color:var(--ink2);font-size:12px}
 .base-switch button.on{background:var(--ink);color:#fff}
 .base-switch button:disabled{opacity:.38;cursor:not-allowed}
@@ -138,6 +145,20 @@ button.primary:hover{background:#047857}
 .kv:last-child{border:none}
 .kv span:last-child{color:var(--ink);text-align:right;word-break:break-all}
 
+/* ---------- 赏秋点详情 ---------- */
+/* 图按宽 1200、WebP、200 KB 上下入库；这里再挂 loading=lazy，别让列表把图都拉下来 */
+.shot{margin:0 0 13px}
+.shot img{width:100%;border-radius:10px;display:block;background:#f1f5f9;min-height:60px}
+.shot figcaption{font-size:11.5px;color:var(--ink2);margin-top:5px;display:flex;
+  justify-content:space-between;gap:8px;align-items:baseline}
+.shot figcaption .date{color:var(--ink3);white-space:nowrap}
+.shot .credit{font-size:11px;color:var(--ink3);margin-top:2px}
+.shot .credit a{color:var(--ink3)}
+/* 当季那一句要一眼看到：用户十月打开和十二月打开，答案不一样 */
+.season{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:10px;
+  padding:7px 10px;font-size:12.5px;margin:10px 0 12px}
+.badge.ex{background:#0f172a;margin-left:7px;font-size:10.5px;vertical-align:2px}
+
 /* ---------- 图例 / 提示 ---------- */
 .legend{
   position:absolute;left:12px;bottom:12px;z-index:4;background:rgba(255,255,255,.94);
@@ -146,6 +167,8 @@ button.primary:hover{background:#047857}
 }
 .legend div{display:flex;align-items:center;gap:5px}
 .legend i{width:14px;height:4px;border-radius:2px;display:inline-block}
+.legend i.spot{width:11px;height:11px;border-radius:50%;background:#c2410c;
+  box-shadow:0 0 0 2px #fff,0 0 0 3px #c2410c;margin:0 2px}
 .legend .disc{width:100%;color:var(--ink3);font-size:11px;margin-top:3px}
 .toast{
   position:absolute;bottom:22px;left:50%;transform:translateX(-50%);z-index:9;
@@ -169,8 +192,8 @@ button.primary:hover{background:#047857}
   .bar:not(.open) #f-q{width:100%}
   .bar:not(.open) #btn-import{padding:6px 10px;white-space:nowrap;flex:0 0 auto}
   .bar.open .filters{flex:1 1 100%;flex-wrap:wrap;gap:10px 14px;align-items:flex-end}
-  .base-switch{display:none}
-  .bar.open .base-switch{display:flex;position:static;order:3}
+  .map-tools{display:none}
+  .bar.open .map-tools{display:flex;position:static;order:3}
   .only-wide{display:none}
   .only-narrow{display:inline}
   #panel{top:auto;left:12px;right:12px;bottom:12px;width:auto;height:46%;transition:height .22s ease}

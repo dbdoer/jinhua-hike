@@ -5,3 +5,10 @@
 # 站点上「下载原始 GPX」给的就是仓库里的那份，于是下下来的东西跟用户导出的
 # 原始文件不是同一串字节。GPX 解析不受影响，但既然写的是「原始」，就该给原始。
 *.gpx -text
+
+# 照片同理：二进制就别让 git 碰。PNG/JPEG 本来会被认成二进制，写在这里是把话说明白，
+# 免得哪天有人手滑给 *.png 加了 text 属性。
+*.webp binary
+*.jpg binary
+*.jpeg binary
+*.png binary

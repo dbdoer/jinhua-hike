@@ -30,14 +30,20 @@ jinhua-hike/
 ├── app.js              全部前端逻辑：地图、筛选、列表、详情、剖面
 ├── style.css
 ├── vendor/             MapLibre GL 本地兜底（主路径走七牛 CDN，CDN 挂了它接管）
-├── data/               构建产物，由 tools/build_routes.py 生成
+├── data/               构建产物，由 tools/ 下的脚本生成
 │   ├── routes.json     完整数据（含 geometry / annotations）
 │   ├── routes.geojson  标准 GeoJSON，供外部工具吃
 │   ├── routes.index.js 列表元数据（window.HIKE_INDEX，~20KB，首屏就要）
-│   └── routes.geom.js  几何 + 标注点（window.HIKE_GEOM，~130KB，可晚一步到）
+│   ├── routes.geom.js  几何 + 标注点（window.HIKE_GEOM，~130KB，可晚一步到）
+│   ├── spots.js        赏秋点（window.SPOT_DATA，量级小，跟元数据一起上）
+│   └── spots.geojson   赏秋点的标准 GeoJSON
 ├── gpx/                两步路导出的原始 GPX + MANIFEST.json（字节指纹）
+├── spots/              赏秋点：人工打点的源数据（照 gpx/ 的地位，源在库里、产物在 data/）
+│   ├── spots.json      一个点一条，坐标手标
+│   └── photos/         自己拍的照片（WebP，宽 1200）
 ├── tools/              构建与自查脚本（Python 3，只用标准库）
 │   ├── build_routes.py
+│   ├── build_spots.py
 │   ├── check_dupes.py
 │   ├── check_gpx_manifest.py
 │   └── data/jinhua_counties.json   金华 9 个县市区的行政边界多边形
@@ -166,6 +172,82 @@ python tools/check_gpx_manifest.py --quiet   # 只报问题（build_routes.py �
 2. 所以 `.gitattributes` 里写了 `*.gpx -text`，**禁止一切行尾转换，别删它**。
 3. `gpx/MANIFEST.json` 记录 56 个 GPX 的 sha256 与字节数；`build_routes.py` 收尾时会自动
    跑一次校验（quiet 模式），不一致就提示。清单**刻意不放时间戳** —— 只有内容真变了 diff 才动。
+
+## 赏秋点：自己打点，跟两步路那批数据分开
+
+徒步路线来自两步路用户上传的 GPX；**赏秋点是本站自己实地打的点**，两套数据、两条管线，
+互不参与对方的筛选。地图右上角那个「赏秋点」开关是它们唯一的总闸。
+
+```
+spots/spots.json + spots/photos/  ──build_spots.py──▶  data/spots.js + data/spots.geojson
+```
+
+**机器只校验，不替你选点** —— 坐标必须人手填，并且写清来源与精度。这条规矩从徒步那边
+沿用过来，`build_spots.py` 校验不过就退出码 1、不写产物。
+
+```bash
+python tools/build_spots.py               # 校验 + 生成
+python tools/build_spots.py --check-only  # 只看校验结果
+```
+
+### 一个点长这样
+
+```json
+{
+  "id": "shuanglong-shuishan",          // 小写字母/数字/连字符，稳定不改
+  "name": "双龙洞外那片水杉",
+  "kind": "水杉",                        // 树种，见 build_spots.py 的 KINDS
+  "region": "婺城区",
+  "lon": 119.62123, "lat": 29.13891,     // WGS-84，手标
+  "coord_src": "Google Earth 手标",      // 坐标哪来的，必须写
+  "coord_acc_m": 20,                     // 精度（米），必须写
+  "intro": "秋天这里的红水杉很漂亮，沿路一整排，下午三四点斜光最好看。",
+  "best_from": "11-中", "best_to": "12-上",   // 最佳观赏期，按旬
+  "season_note": "2025 年偏暖，比往年晚一周",  // 今年的实际情况，可空
+  "verified_at": "2025-11-23",           // 最后一次亲眼确认
+  "access": "免费；车停路边空地，往里走 5 分钟",
+  "tags": ["免费", "开车可达"],
+  "photos": [
+    {
+      "file": "shuanglong-01.webp",      // 只写文件名，实际在 spots/photos/
+      "caption": "11 月下旬，下午三点左右",
+      "shot_at": "2025-11-23",
+      "credit": null,                    // null＝本站自摄（见下）
+      "credit_url": null,
+      "license": null
+    }
+  ]
+}
+```
+
+### 时间轴按「旬」——这是赏秋图的骨头
+
+`best_from` / `best_to` 写「11-中」这种形式（月-上/中/下）。详情页和悬停气泡会根据
+**今天的旬**算出一句话：还在等 / 正是时候 / 刚过去 / 今年这季已过。
+
+不写时间，这就是一堆钉子：用户十月打开和十二月打开看到的一样。写了时间，它才回答
+「现在该去哪儿」——而这一句别人抄不走，因为他们不会年年去更新。
+
+代价也说清楚：**这是长期的债**。银杏黄得早晚年年不同，每年秋天得回来更新一次
+`season_note` 和 `verified_at`。
+
+### 图片与版权
+
+- 图放 `spots/photos/`，**WebP、宽 1200、单张 400 KB 以内**（超过了脚本会提醒）。
+  详情页挂了 `loading="lazy"`，别让列表把图都拉下来。
+- **`credit` 为 `null` 就是「本站自摄」**，详情页会写「本站自摄」。
+- 别人的图**必须**同时填 `credit`（摄影者）和 `license`（授权方式），脚本会卡住不放。
+  建议再填 `credit_url` 链回原帖。**没有授权就别用** —— 这个站自己的版权声明才立得住。
+
+### 加一个点的流程
+
+```bash
+# 1. 到现场，拍照，用 Google Earth 取 WGS-84 坐标（记下精度）
+# 2. 图片压成 WebP、宽 1200，丢进 spots/photos/
+# 3. 往 spots/spots.json 里加一条
+# 4. python tools/build_spots.py     # 校验通过才生成 data/spots.js
+# 5. 本地 serve.bat 看一眼，提交
+```
 
 ## 新增一条路线
 

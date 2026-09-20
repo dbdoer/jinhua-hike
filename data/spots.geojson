@@ -1,0 +1,72 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "id": "example-01",
+   "properties": {
+    "id": "example-01",
+    "name": "（示例·待替换）某某水库边的红水杉",
+    "kind": "水杉",
+    "region": "婺城区",
+    "lon": 119.6505,
+    "lat": 29.1021,
+    "coord_src": "示例占位，不是实地坐标",
+    "coord_acc_m": 2000,
+    "intro": "这是示例数据，用来看效果：秋天这里的红水杉很漂亮，沿路一整排，下午三四点斜光最好看。",
+    "best_from": "11-中",
+    "best_to": "12-上",
+    "season_note": null,
+    "verified_at": null,
+    "access": "示例内容，等你替换",
+    "tags": [
+     "免费",
+     "开车可达"
+    ],
+    "example": true,
+    "best_i_from": 31,
+    "best_i_to": 33
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     119.6505,
+     29.1021
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "example-02",
+   "properties": {
+    "id": "example-02",
+    "name": "（示例·待替换）某某村口的两棵银杏",
+    "kind": "银杏",
+    "region": "武义县",
+    "lon": 119.8203,
+    "lat": 28.9016,
+    "coord_src": "示例占位，不是实地坐标",
+    "coord_acc_m": 2000,
+    "intro": "第二个示例点，用来看「按旬筛选」和多种树种在同一条时间轴上怎么排。",
+    "best_from": "11-下",
+    "best_to": "12-中",
+    "season_note": null,
+    "verified_at": null,
+    "access": "示例内容，等你替换",
+    "tags": [
+     "免费"
+    ],
+    "example": true,
+    "best_i_from": 32,
+    "best_i_to": 34
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     119.8203,
+     28.9016
+    ]
+   }
+  }
+ ]
+}
