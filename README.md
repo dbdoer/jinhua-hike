@@ -41,11 +41,12 @@ jinhua-hike/
 ├── spots/              赏秋点：人工打点的源数据（照 gpx/ 的地位，源在库里、产物在 data/）
 │   ├── spots.json      一个点一条，坐标手标
 │   └── photos/         自己拍的照片（WebP，宽 1200）
-├── tools/              构建与自查脚本（Python 3，只用标准库）
+├── tools/              构建与自查脚本（Python 3；只有 prep_photos.py 用到 Pillow）
 │   ├── build_routes.py
 │   ├── build_spots.py
 │   ├── check_dupes.py
 │   ├── check_gpx_manifest.py
+│   ├── prep_photos.py  赏秋点照片压 WebP（手动跑一次，不进流水线）
 │   └── data/jinhua_counties.json   金华 9 个县市区的行政边界多边形
 ├── docs/               README 用的演示截图（demo-*.png，随版本库走）
 └── shots/              自测截图（不进版本库）
@@ -234,6 +235,9 @@ python tools/build_spots.py --check-only  # 只看校验结果
 ### 图片与版权
 
 - 图放 `spots/photos/`，**WebP、宽 1200、单张 400 KB 以内**（超过了脚本会提醒）。
+  **用 `tools/prep_photos.py` 压，别手动压** —— 它顺带按 EXIF 转正（手机竖拍不转正会躺倒）、
+  丢掉含 GPS 的 EXIF（站点已公开点位，没必要再交出每次拍摄的精确坐标）、宽度只缩不放。
+  手动压必忘后两件。输出名是 `<前缀>-01.webp`，直接填进 `photos[].file`。
   详情页挂了 `loading="lazy"`，别让列表把图都拉下来。
 - **`credit` 为 `null` 就是「本站自摄」**，详情页会写「本站自摄」。
 - 别人的图**必须**同时填 `credit`（摄影者）和 `license`（授权方式），脚本会卡住不放。
@@ -244,6 +248,7 @@ python tools/build_spots.py --check-only  # 只看校验结果
 ```bash
 # 1. 到现场，拍照，用 Google Earth 取 WGS-84 坐标（记下精度）
 # 2. 图片压成 WebP、宽 1200，丢进 spots/photos/
+python tools/prep_photos.py --prefix shuanglong 原图1.jpg 原图2.jpg
 # 3. 往 spots/spots.json 里加一条
 # 4. python tools/build_spots.py     # 校验通过才生成 data/spots.js
 # 5. 本地 serve.bat 看一眼，提交
