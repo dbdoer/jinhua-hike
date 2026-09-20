@@ -1,7 +1,7 @@
 {
  "note": "gpx/ 里原始 GPX 文件的字节指纹。任何一项对不上，都意味着「下载原始 GPX」给出去的已经不是上传者导出的那串字节。.gitattributes 里 *.gpx 标了 -text，禁止 git 做行尾转换 —— 别去掉它。用 python tools/check_gpx_manifest.py 校验。",
  "algorithm": "sha256",
- "count": 58,
+ "count": 60,
  "files": [
   {
    "file": "三县第一潭三瀑.gpx",
@@ -319,6 +319,13 @@
    "name": "皮子源燕子洞"
   },
   {
+   "file": "笔架山三渡溪下撤路线.gpx",
+   "bytes": 285001,
+   "sha256": "384229a3de9807e5ec2863ab6f92a2ba1a9695ed35d9d1d8d9f0278eb36a4b60",
+   "track_id": "78606742",
+   "name": "笔架山 三渡溪下撤路线"
+  },
+  {
    "file": "美女峰免费260524.gpx",
    "bytes": 62542,
    "sha256": "ac0e530276a25265bb4eb617bae804c734e2da23ed833e53fc67c040aba9e0cc",
@@ -352,6 +359,13 @@
    "sha256": "bb51d2cefbcecbaae097a612a9ca120839f37bd673e54176f1d9fe3f13d0d188",
    "track_id": "85871840",
    "name": "金兰古道小环线260614"
+  },
+  {
+   "file": "金华九龙村玲珑村环线.gpx",
+   "bytes": 153861,
+   "sha256": "05e677804c9e870d5064e3250fba2e45ddfcf0684b8c70a811602351dc43ee65",
+   "track_id": "79710013",
+   "name": "2024-11-07 09:00 小冰岛"
   },
   {
    "file": "金华兰溪市六洞山小环线.gpx",

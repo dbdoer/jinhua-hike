@@ -1139,12 +1139,11 @@ function parseGpxText(text, filename) {
     if (isFinite(a) && isFinite(b)) hours = +(((b - a) / 3600000).toFixed(2));
   } else if (ext.TimeUsed && +ext.TimeUsed > 0) hours = +(ext.TimeUsed / 3600000).toFixed(2);
 
-  // 与 build_routes.py 同口径：上传者在两步路里没命名时，导出会拿录制时刻当 name
-  // （实测「2025-03-20 10:07:11」），那不该当路线名用，退回文件名。
+  // 与 build_routes.py 同口径：剥掉名字前面顶着的录制时刻（「2024-11-07 09:00 小冰岛」）；
+  // 整个名字就是时刻的话剥完为空，退回文件名（「2025-03-20 10:07:11」那种）。
   const rawName = (ext.name || '').trim();
-  const name = (!rawName || /^\d{4}-\d{2}-\d{2}([ T]\d{2}:\d{2}(:\d{2})?)?$/.test(rawName))
-    ? filename.replace(/\.gpx$/i, '')
-    : rawName;
+  const name = rawName.replace(/^\d{4}-\d{2}-\d{2}([ T]\d{2}:\d{2}(:\d{2})?)?\s*/, '').trim()
+    || filename.replace(/\.gpx$/i, '');
   const desc = ext.description || '';
   const tags = (ext.TrackTags || '').split(/[,，、\s]+/).filter(Boolean);
   // 与 build_routes.py 同口径的第一步：PosStartName 里含且仅含一个县名才认。

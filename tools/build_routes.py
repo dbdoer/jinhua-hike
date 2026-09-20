@@ -290,14 +290,13 @@ def parse_gpx(path):
     # 不会改变形状。高程不动，免得与 ele_max 对不上。
     simp = [[round(pt[0], 5), round(pt[1], 5)] + pt[2:] for pt in simp]
 
-    # 显示名：优先 GPX 内部的 <name>，但它未必是名字 —— 上传者在两步路里没命名时，
-    # 导出会拿录制时刻当 name（实测「2025-03-20 10:07:11」），这串玩意儿摆进列表
-    # 等于没名字。这种就退回文件名：文件名是上传者导出时自己给的。
+    # 显示名：优先 GPX 内部的 <name>，但它常被顶上一个录制时刻 ——
+    # 全名就是时刻的（「2025-03-20 10:07:11」），或者时刻后面才跟真名字
+    # （「2024-11-07 09:00 小冰岛」）。统一剥掉前导时刻：剥完还有字就留着，
+    # 剥完是空的就退回文件名（文件名是上传者导出时自己给的）。
     raw_name = (gpx_ext.get("name") or "").strip()
-    if not raw_name or re.fullmatch(r"\d{4}-\d{2}-\d{2}([ T]\d{2}:\d{2}(:\d{2})?)?", raw_name):
-        name = os.path.splitext(os.path.basename(path))[0]
-    else:
-        name = raw_name
+    name = re.sub(r"^\d{4}-\d{2}-\d{2}([ T]\d{2}:\d{2}(:\d{2})?)?\s*", "", raw_name).strip() \
+        or os.path.splitext(os.path.basename(path))[0]
     desc = gpx_ext.get("description") or ""
     tags = [t for t in re.split(r"[,，、\s]+", gpx_ext.get("TrackTags", "")) if t]
     # 区域归属，三步走，越靠前越可信：
