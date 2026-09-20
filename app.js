@@ -1139,11 +1139,10 @@ function parseGpxText(text, filename) {
     if (isFinite(a) && isFinite(b)) hours = +(((b - a) / 3600000).toFixed(2));
   } else if (ext.TimeUsed && +ext.TimeUsed > 0) hours = +(ext.TimeUsed / 3600000).toFixed(2);
 
-  // 与 build_routes.py 同口径：剥掉名字前面顶着的录制时刻（「2024-11-07 09:00 小冰岛」）；
-  // 整个名字就是时刻的话剥完为空，退回文件名（「2025-03-20 10:07:11」那种）。
-  const rawName = (ext.name || '').trim();
-  const name = rawName.replace(/^\d{4}-\d{2}-\d{2}([ T]\d{2}:\d{2}(:\d{2})?)?\s*/, '').trim()
-    || filename.replace(/\.gpx$/i, '');
+  // 与 build_routes.py 同口径：显示名一律取文件名。GPX 里的 <name> 指望不上
+  // （可能是录制时刻、可能是「时刻 + 真名」、也可能跟文件对不上），文件名才是
+  // 审核过、与文件一一对得上的那一个。原始 <name> 仍存进 source.gpx_name 备查。
+  const name = filename.replace(/\.gpx$/i, '');
   const desc = ext.description || '';
   const tags = (ext.TrackTags || '').split(/[,，、\s]+/).filter(Boolean);
   // 与 build_routes.py 同口径的第一步：PosStartName 里含且仅含一个县名才认。
@@ -1194,6 +1193,8 @@ function parseGpxText(text, filename) {
       provider: '两步路(2bulu) · 本地导入', track_id: ext.TrackId || null,
       creator: ext.CreaterName || null, creator_id: ext.CreaterId || null,
       app_version: ext.ProductVersion || null, begin_time: ext.BeginTime || null, file: filename,
+      // 上传者在 GPX 里写的名字（可能带录制时刻、也可能与文件名不同）。只备查，不显示。
+      gpx_name: ext.name || null,
     },
     geometry: { type: 'LineString', coordinates: coords },
     imported: true,

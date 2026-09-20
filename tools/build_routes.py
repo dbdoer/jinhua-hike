@@ -180,6 +180,27 @@ def rdp(points, eps, must_keep=()):
     return [p for p, k in zip(points, keep) if k]
 
 
+# 显示名默认取文件名（去掉 .gpx）—— 文件名是本站审核过的那一个，能跟仓库里的文件
+# 一一对上。上传者在 GPX 里自己写的 <name> 指望不上：可能是录制时刻
+# （「2025-03-20 10:07:11」）、可能是「时刻 + 真名」（「2024-11-07 09:00 小冰岛」）、
+# 也可能只是多一个空格或括号。
+# tools/data/route-names.json 是历史例外表：早先入库、当时按 GPX 内部名显示的那几条，
+# 保留原样不动（改名会让老链接、老截图、别人存的图都对不上）。新数据不必进表。
+_NAME_OVERRIDE = None
+
+
+def name_overrides():
+    global _NAME_OVERRIDE
+    if _NAME_OVERRIDE is None:
+        p = os.path.join(ROOT, "tools", "data", "route-names.json")
+        try:
+            with open(p, encoding="utf-8") as fp:
+                _NAME_OVERRIDE = json.load(fp)
+        except FileNotFoundError:
+            _NAME_OVERRIDE = {}
+    return _NAME_OVERRIDE
+
+
 def parse_gpx(path):
     tree = ET.parse(path)
     root = tree.getroot()
@@ -290,13 +311,9 @@ def parse_gpx(path):
     # 不会改变形状。高程不动，免得与 ele_max 对不上。
     simp = [[round(pt[0], 5), round(pt[1], 5)] + pt[2:] for pt in simp]
 
-    # 显示名：优先 GPX 内部的 <name>，但它常被顶上一个录制时刻 ——
-    # 全名就是时刻的（「2025-03-20 10:07:11」），或者时刻后面才跟真名字
-    # （「2024-11-07 09:00 小冰岛」）。统一剥掉前导时刻：剥完还有字就留着，
-    # 剥完是空的就退回文件名（文件名是上传者导出时自己给的）。
-    raw_name = (gpx_ext.get("name") or "").strip()
-    name = re.sub(r"^\d{4}-\d{2}-\d{2}([ T]\d{2}:\d{2}(:\d{2})?)?\s*", "", raw_name).strip() \
-        or os.path.splitext(os.path.basename(path))[0]
+    # 显示名：默认用文件名，历史例外表里那几条按表走（理由见 name_overrides）。
+    stem = os.path.splitext(os.path.basename(path))[0]
+    name = name_overrides().get(os.path.basename(path), stem)
     desc = gpx_ext.get("description") or ""
     tags = [t for t in re.split(r"[,，、\s]+", gpx_ext.get("TrackTags", "")) if t]
     # 区域归属，三步走，越靠前越可信：
@@ -386,6 +403,9 @@ def parse_gpx(path):
             "app_version": gpx_ext.get("ProductVersion"),
             "begin_time": gpx_ext.get("BeginTime"),
             "file": os.path.basename(path),
+            # 上传者在 GPX 里自己写的 <name>（可能带录制时刻、也可能与文件名不同）。
+            # 只备查，不参与显示 —— 显示名一律用文件名。
+            "gpx_name": gpx_ext.get("name"),
         },
         "geometry": {"type": "LineString", "coordinates": simp},
     }
