@@ -59,6 +59,86 @@ const state = {
   selected: null, base: 'liberty',
   spotsOn: true, spotSel: null,
 };
+
+/* --------------------------- 分享 / 深链 ---------------------------
+   静态站没有服务端路由，深链只能走 hash：#route=tb_83107473 / #spot=shuanglong。
+   用 hash 而不是查询串，是因为它不改路径 —— GitHub Pages 不会去找一个不存在的
+   文件，file:// 双击打开时也一样能用。id 只含 [a-z0-9_-]，不用转义。
+
+   分享出去的就是「当前这一页」：好友打开，直接落到那条路线 / 那个点的详情。 */
+const SHARE_RE = /^(route|spot)=([A-Za-z0-9_-]+)$/;
+
+function shareUrl() {
+  const base = location.href.split('#')[0];
+  if (state.selected) return base + '#route=' + state.selected;
+  if (state.spotSel) return base + '#spot=' + state.spotSel;
+  return base;
+}
+
+/* 地址栏跟着当前详情走。用 replaceState 而不是 pushState：这个站自己有
+   「返回列表」，不必再往浏览器历史里塞一堆中间态。file:// 下 replaceState
+   可能被拒，那就安静地不做 —— 地址栏不好看，远不如页面崩掉严重。 */
+function syncHash() {
+  try {
+    const url = shareUrl();
+    if (location.href !== url) history.replaceState(null, '', url);
+  } catch (_) { /* 不值得为地址栏报错 */ }
+}
+
+/* 好友点开链接时，把详情直接摆出来。 */
+function applyHash() {
+  const m = SHARE_RE.exec((location.hash || '').slice(1));
+  if (!m) {
+    // hash 没了（点了后退、或手动删了）：回到列表，别留个没人认领的详情
+    if (state.selected || state.spotSel) backToList();
+    return false;
+  }
+  const id = m[2];
+  if (m[1] === 'route') {
+    if (!routes.some(x => x.id === id)) { toast('这条路线不在站里了，可能已被撤下'); return false; }
+    if (state.selected !== id) select(id);
+    return true;
+  }
+  if (!spots.some(x => x.id === id)) { toast('这个赏秋点不在站里了'); return false; }
+  if (state.spotSel !== id) selectSpot(id);
+  return true;
+}
+
+/* 分享时带上一句话，好友在聊天窗口里就能看出这是什么，不用点开才知道。 */
+function shareTitle() {
+  if (state.selected) {
+    const r = routes.find(x => x.id === state.selected);
+    if (r) return r.name + '（' + r.distance_km + ' km · 爬升 ' + r.ascent_m + ' m · '
+      + r.difficulty + '）· 金华徒步路线';
+  }
+  if (state.spotSel) {
+    const s = spots.find(x => x.id === state.spotSel);
+    if (s) return s.name + '（' + s.kind + ' · ' + s.region + '）· 金华赏秋点';
+  }
+  return '金华徒步路线';
+}
+
+/* 手机上优先叫出系统分享面板（微信、钉钉、短信都在里面），桌面没有就退回复制链接。 */
+async function doShare() {
+  const url = shareUrl(), title = shareTitle();
+  track('分享', state.spotSel ? '赏秋点' : '路线', title);
+  if (navigator.share) {
+    try { await navigator.share({ title, text: title, url }); return; }
+    catch (e) {
+      if (e && e.name === 'AbortError') return;   // 用户自己取消的，别再弹一句
+      /* 其他原因失败就往下走，退回复制 */
+    }
+  }
+  copy(url);
+}
+
+/* 分享按钮用事件委托装一次。详情面板每次渲染都把 DOM 重建一遍，给按钮逐个绑
+   既啰嗦、又容易在「路线 / 赏秋点」两套渲染里漏掉一个。 */
+document.addEventListener('click', e => {
+  const b = e.target && e.target.closest ? e.target.closest('[data-share]') : null;
+  if (b) { e.preventDefault(); doShare(); }
+});
+
 let lastRegionSig = '';
 
 /* ------------------------- 导入 GPX：入口已下线 -------------------------
@@ -247,6 +327,13 @@ function bootMap() {
   if (!window.maplibregl || !geomReady) return;
   attachGeometry();
   initMap();
+  // 带着分享链接进来时，select() 早在地图建好之前就跑过了 —— 那一次 fitToRoute
+  // 因为 map 还是 null 直接返回，镜头根本没动。这里补一次，否则好友点开链接
+  // 会停在全金华的大视野上，看不见那条线，等于分享了个空地图。
+  const r0 = state.selected ? routes.find(x => x.id === state.selected) : null;
+  const s0 = state.spotSel ? spots.find(x => x.id === state.spotSel) : null;
+  if (r0) fitToRoute(r0, 0);
+  else if (s0) fitToSpot(s0, 0);
 }
 window.__initMap = bootMap;
 window.__onGeomReady = () => { geomReady = true; bootMap(); };
@@ -254,6 +341,10 @@ window.__onGeomReady = () => { geomReady = true; bootMap(); };
 /* 先把列表摆出来，不等地图。refresh() 里地图那一段在 map === null 时整块跳过。 */
 refresh();
 bootMap();   // 两个资源都在缓存里时，这一步就已经齐了
+// 分享链接（#route=… / #spot=…）：把详情直接摆出来。放在首屏之后跑，别拖慢列表；
+// 地图没建好也没关系，bootMap 收尾会补镜头。
+applyHash();
+window.addEventListener('hashchange', applyHash);
 
 // 顶部筛选条高度会随 chip 换行变化，面板顶边跟着走，别互相压
 function layoutPanel() {
@@ -532,6 +623,7 @@ function select(id) {
   renderDetail(r);
   track('路线', '点开', r.name);
   refresh();
+  syncHash();   // 地址栏跟着走，浏览器自带的「复制链接」也就能用了
   if (map && state.wpt) {
     map.setFilter('anno-dot', ['==', ['get', 'route_id'], id]);
     map.setLayoutProperty('anno-dot', 'visibility', 'visible');
@@ -548,6 +640,7 @@ function backToList() {
   document.getElementById('list').hidden = false;
   document.getElementById('btn-back').hidden = true;
   refresh();
+  syncHash();   // 回到列表就把 hash 摘掉，别把已关闭的详情留在地址栏里
 }
 
 function esc(s) {
@@ -571,6 +664,7 @@ function renderDetail(r) {
     `<a href="https://api.map.baidu.com/marker?location=${r.start.lat},${r.start.lon}&title=${encodeURIComponent(r.name)}&content=轨迹起点&coord_type=wgs84&output=html&src=webapp.jinhua.hike" target="_blank" rel="noopener">百度导航到起点</a>`,
     `<button data-copy="${r.start.lat},${r.start.lon}">复制 WGS-84 坐标</button>`,
     `<button data-locate="${r.id}">地图上定位起点</button>`,
+    `<button data-share="1">分享链接</button>`,
   ];
   // 本地导入的 GPX 不在 gpx/ 目录里，别给一个必然 404 的下载链接
   if (s.file && !r.imported) nav.push(`<a href="gpx/${encodeURIComponent(s.file)}" download>下载原始 GPX</a>`);
@@ -747,6 +841,7 @@ function selectSpot(id) {
   else fitToSpot(s, 800);
   renderSpotDetail(s);
   track('赏秋点', '点开', s.name);
+  syncHash();
 }
 
 /* 每张图底下必须有一行来源。credit 为 null 是约定：本站自己拍的。
@@ -775,6 +870,7 @@ function renderSpotDetail(s) {
     `<a href="https://uri.amap.com/marker?position=${s.lon},${s.lat}&name=${encodeURIComponent(s.name)}&coordinate=wgs84&callnative=1&src=jinhua-autumn-map" target="_blank" rel="noopener">高德导航到这个点</a>`,
     `<button data-copy="${s.lat},${s.lon}">复制 WGS-84 坐标</button>`,
     `<button data-locate="${s.id}">地图上定位</button>`,
+    `<button data-share="1">分享链接</button>`,
   ];
   document.getElementById('detail').innerHTML = `
     <h2>${esc(s.name)}${s.example ? '<span class="badge ex">示例</span>' : ''}</h2>
