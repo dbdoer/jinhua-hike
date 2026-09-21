@@ -726,9 +726,8 @@ function renderDetail(r) {
     `<button data-locate="${r.id}">地图上定位起点</button>`,
     `<button data-share="1">分享链接</button>`,
   ];
-  // 本地导入的 GPX 不在 gpx/ 目录里，别给一个必然 404 的下载链接
-  if (s.file && !r.imported) nav.push(`<a href="gpx/${encodeURIComponent(s.file)}" download>下载原始 GPX</a>`);
-  else if (r.imported) nav.push('<span style="color:#94a3b8;font-size:12px">本地导入的 GPX，未随页面分发</span>');
+  // 「下载原始 GPX」按钮已移除：原始 GPX 是两步路用户上传的作品，本站只做整理展示，
+  // 主动分发文件是越界的那一步 —— 是否分发是上传者的处置权，不是本站的。别加回来。
 
   const generic = [
     '山里信号差，出发前把轨迹离线存到手机（两步路/户外助手均可离线）。',
