@@ -143,8 +143,8 @@ window._hmt = window._hmt || [];
 
   <!-- 右上角这组管「看什么」，跟上面那排筛选（筛什么）分开 -->
   <div class="map-tools" id="map-tools">
-    <label class="spot-switch" title="本站自己实地打的赏秋点，与两步路的路线数据无关">
-      <input type="checkbox" id="f-spots" checked><span>赏秋点</span>
+    <label class="spot-switch" title="本站自己实地打的点位（瀑布、秋色等），与两步路的路线数据无关">
+      <input type="checkbox" id="f-spots" checked><span>点位</span>
     </label>
     <div class="base-switch" id="base-switch">
       <button data-base="liberty" class="on">简洁</button>
@@ -173,7 +173,7 @@ window._hmt = window._hmt || [];
   <div><i style="background:#b91c1c"></i>困难</div>
   <div><i style="background:#0284c7"></i>起点</div>
   <div><i style="background:#7c3aed;border-radius:2px"></i>沿途标注</div>
-  <div id="legend-spot"><i class="spot"></i>赏秋点</div>
+  <div id="legend-spot"><i class="spot"></i>点位</div>
   <div class="disc">难度＝系统按「距离＋累计爬升」判定，非两步路官方评级</div>
 </div>
 
@@ -191,7 +191,7 @@ window._hmt = window._hmt || [];
 <!-- 列表元数据 + 逻辑先上（首屏只要这两样）。maplibre（~250KB）和几何
      （~130KB）各用 async 单独拉，到位后各自回调；两个齐了才建图。 -->
 <script src="data/routes.index.js"></script>
-<!-- 赏秋点：本站自己打的位置，几十个点的量级，不拆包，跟元数据一起先上 -->
+<!-- 点位：本站自己打的位置，几十个点的量级，不拆包，跟元数据一起先上 -->
 <script src="data/spots.js"></script>
 <script src="app.js"></script>
 <script async src="https://cdn.staticfile.org/maplibre-gl/5.6.0/maplibre-gl.min.js"

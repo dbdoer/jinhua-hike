@@ -45,7 +45,7 @@ button.ghost{color:var(--ink2)}
 button.ghost:hover{background:#f1f5f9}
 button.primary{background:var(--green);border-color:var(--green);color:#fff}
 button.primary:hover{background:#047857}
-/* 右上角工具组：赏秋点开关 + 底图切换。
+/* 右上角工具组：点位开关 + 底图切换。
    原先 base-switch 自己绝对定位，加个开关就没地方放了 —— 位置改由容器管。 */
 .map-tools{position:absolute;top:12px;right:12px;display:flex;align-items:center;gap:8px;z-index:5}
 .spot-switch{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--ink2);
@@ -145,7 +145,7 @@ button.primary:hover{background:#047857}
 .kv:last-child{border:none}
 .kv span:last-child{color:var(--ink);text-align:right;word-break:break-all}
 
-/* ---------- 赏秋点详情 ---------- */
+/* ---------- 点位详情 ---------- */
 /* 图按宽 1200、WebP、200 KB 上下入库；这里再挂 loading=lazy，别让列表把图都拉下来 */
 .shot{margin:0 0 13px}
 .shot img{width:100%;border-radius:10px;display:block;background:#f1f5f9;min-height:60px}
@@ -169,6 +169,10 @@ button.primary:hover{background:#047857}
 .legend i{width:14px;height:4px;border-radius:2px;display:inline-block}
 .legend i.spot{width:11px;height:11px;border-radius:50%;background:#c2410c;
   box-shadow:0 0 0 2px #fff,0 0 0 3px #c2410c;margin:0 2px}
+/* 图例里的点位类目：数据里有几个类目就列几个，点色跟着 KIND_COLOR 走（app.js 填） */
+.legend #legend-spot .kind{display:flex;align-items:center;gap:4px}
+.legend #legend-spot .kind i{width:10px;height:10px;border-radius:50%;
+  box-shadow:0 0 0 2px #fff;margin:0 2px}
 .legend .disc{width:100%;color:var(--ink3);font-size:11px;margin-top:3px}
 .toast{
   position:absolute;bottom:22px;left:50%;transform:translateX(-50%);z-index:9;

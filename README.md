@@ -38,10 +38,10 @@ jinhua-hike/
 │   ├── routes.geojson  标准 GeoJSON，供外部工具吃
 │   ├── routes.index.js 列表元数据（window.HIKE_INDEX，~20KB，首屏就要）
 │   ├── routes.geom.js  几何 + 标注点（window.HIKE_GEOM，~130KB，可晚一步到）
-│   ├── spots.js        赏秋点（window.SPOT_DATA，量级小，跟元数据一起上）
-│   └── spots.geojson   赏秋点的标准 GeoJSON
+│   ├── spots.js        点位（window.SPOT_DATA，量级小，跟元数据一起上）
+│   └── spots.geojson   点位的标准 GeoJSON
 ├── gpx/                两步路导出的原始 GPX + MANIFEST.json（字节指纹）
-├── spots/              赏秋点：人工打点的源数据（照 gpx/ 的地位，源在库里、产物在 data/）
+├── spots/              点位：人工打点的源数据（照 gpx/ 的地位，源在库里、产物在 data/）
 │   ├── spots.json      一个点一条，坐标手标
 │   └── photos/         自己拍的照片（WebP，宽 1200）
 ├── tools/              构建与自查脚本（Python 3；只有 prep_photos.py 用到 Pillow）
@@ -49,7 +49,7 @@ jinhua-hike/
 │   ├── build_spots.py
 │   ├── check_dupes.py
 │   ├── check_gpx_manifest.py
-│   ├── prep_photos.py  赏秋点照片压 WebP（手动跑一次，不进流水线）
+│   ├── prep_photos.py  点位照片压 WebP（手动跑一次，不进流水线）
 │   └── data/jinhua_counties.json   金华 9 个县市区的行政边界多边形
 ├── docs/               README 用的演示截图（demo-*.png，随版本库走）
 │   ├── multi-theme.md  多题材改造清单（徒步 / 玩水 / 赏秋）
@@ -210,10 +210,10 @@ python tools/check_gpx_manifest.py --quiet   # 只报问题（build_routes.py �
 3. `gpx/MANIFEST.json` 记录 56 个 GPX 的 sha256 与字节数；`build_routes.py` 收尾时会自动
    跑一次校验（quiet 模式），不一致就提示。清单**刻意不放时间戳** —— 只有内容真变了 diff 才动。
 
-## 赏秋点：自己打点，跟两步路那批数据分开
+## 点位：自己打点，跟两步路那批数据分开
 
-徒步路线来自两步路用户上传的 GPX；**赏秋点是本站自己实地打的点**，两套数据、两条管线，
-互不参与对方的筛选。地图右上角那个「赏秋点」开关是它们唯一的总闸。
+徒步路线来自两步路用户上传的 GPX；**点位是本站自己实地打的点**，两套数据、两条管线，
+互不参与对方的筛选。地图右上角那个「点位」开关是它们唯一的总闸。
 
 ```
 spots/spots.json + spots/photos/  ──build_spots.py──▶  data/spots.js + data/spots.geojson
@@ -233,7 +233,7 @@ python tools/build_spots.py --check-only  # 只看校验结果
 {
   "id": "shuanglong-shuishan",          // 小写字母/数字/连字符，稳定不改
   "name": "双龙洞外那片水杉",
-  "kind": "水杉",                        // 树种，见 build_spots.py 的 KINDS
+  "kind": "水杉",                        // 类别，见 build_spots.py 的 KINDS（树种 / 瀑布 / 其他）
   "region": "婺城区",
   "lon": 119.62123, "lat": 29.13891,     // WGS-84，手标
   "coord_src": "Google Earth 手标",      // 坐标哪来的，必须写

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-赏秋点 -> data/spots.js / data/spots.geojson
+点位 -> data/spots.js / data/spots.geojson
 
 源数据：spots/spots.json   人工维护
 照片：  spots/photos/      用相对文件名引用
@@ -26,11 +26,12 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_routes import _wgs2gcj   # noqa: E402  WGS-84 -> GCJ-02 只保留一份实现，别抄第二份
 
 # 与 app.js 的 DIFF_COLOR / JINHUA 一样，这里是同一套事实的第二份抄写 ——
-# 改一边必须改另一边，别让「赏秋点」和「徒步路线」对市区县名字有两套说法。
+# 改一边必须改另一边，别让「点位」和「徒步路线」对市区县名字有两套说法。
 REGIONS = ["婺城区", "金东区", "兰溪市", "义乌市", "东阳市",
            "永康市", "武义县", "浦江县", "磐安县"]
-# 想加树种就往这里加，前端按同一个表上色
-KINDS = ["水杉", "银杏", "红枫", "枫香", "乌桕", "芦花", "稻田", "油菜花", "其他"]
+# 想加类目就往这里加（瀑布、稻田、荷塘……都行）。前端 app.js 的 KIND_COLOR
+# 是同一张表，改一边必须改另一边 —— 对不上的话点会拿到 undefined 的颜色。
+KINDS = ["水杉", "银杏", "红枫", "枫香", "乌桕", "芦花", "稻田", "油菜花", "瀑布", "其他"]
 SEGS = {"上": 0, "中": 1, "下": 2}
 PHOTO_EXT = (".webp", ".jpg", ".jpeg", ".png")
 # 金华市范围，跟 app.js 的 JINHUA.bounds 同源；留 0.02 度余量容忍边界上的点
@@ -140,7 +141,7 @@ def validate(data, photos_dir):
             bad("photos 要是数组")
             photos = []
         if not photos:
-            soft("一张图都没有 —— 赏秋点没图，用户不知道去看什么")
+            soft("一张图都没有 —— 点位没图，用户不知道去看什么")
         for j, p in enumerate(photos):
             if not isinstance(p, dict):
                 bad("photos[%d] 不是对象" % j)
@@ -177,7 +178,7 @@ def validate(data, photos_dir):
             warn.append("照片 %s 被 %d 个点共用（%s）" % (fn, len(users), "、".join(users)))
 
     if not spots:
-        warn.append("还没有任何赏秋点 —— 管线是通的，等你的点位")
+        warn.append("还没有任何点位 —— 管线是通的，等你打第一个点")
     return err, warn
 
 
@@ -241,15 +242,15 @@ def main():
         print("  错误  %s" % e)
 
     if err:
-        print("\n%d 个赏秋点，%d 处必须修掉，不生成产物。" % (n, len(err)))
+        print("\n%d 个点位，%d 处必须修掉，不生成产物。" % (n, len(err)))
         return 1
 
     if args.check_only:
-        print("\n%d 个赏秋点，校验通过（未写产物）。" % n)
+        print("\n%d 个点位，校验通过（未写产物）。" % n)
         return 0
 
     payload = build(data, args.out, photos_dir)
-    print("\n生成 %d 个赏秋点 -> data/spots.js / data/spots.geojson" % payload["count"])
+    print("\n生成 %d 个点位 -> data/spots.js / data/spots.geojson" % payload["count"])
     by_kind = {}
     for s in payload["spots"]:
         by_kind[s["kind"]] = by_kind.get(s["kind"], 0) + 1
