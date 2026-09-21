@@ -303,6 +303,9 @@ function onStyleReady() {
   buildFilterChips();
   layoutPanel();
   refresh();
+  // 收尾再画一次选中高亮。高亮的 source（sel / spotSel）就是在这段 load 回调里建的，
+  // 比 bootMap 里那次调用晚 —— 早一步调就是对着还不存在的 source 写 setData。
+  paintSelection();
 }
 
 function initMap() {
@@ -334,6 +337,26 @@ function initMap() {
 }
 /* 地图要两样齐了才建：maplibre 本体 + 几何数据。两个都是 async 拉的，先后随意。 */
 let geomReady = typeof window.HIKE_GEOM !== 'undefined';
+/* 选中的高亮（路线是加亮的那条线，赏秋点是那圈白光圈）。
+   抽成一个函数，因为深链冷启动要走第二遍：带 #route= / #spot= 进来时，
+   select()/selectSpot() 早就跑过了 —— 那时 map 还是 null，`if (map)` 把 setData
+   全挡掉了。bootMap 只补了镜头，于是好友点开链接看到的是一条没有高亮的线、
+   或一朵没有光圈的钉子。镜头和高亮都得补，别再各补一半。 */
+function paintSelection() {
+  if (!map) return;
+  // source 是 map 自己的 load 回调里加的，早于那一刻调用会拿到 undefined —— 直接返回，
+  // 反正 load 收尾还会再画一次（见 initMap 末尾）
+  if (!map.getSource('sel') || !map.getSource('spotSel')) return;
+  const r = state.selected ? routes.find(x => x.id === state.selected) : null;
+  const s = state.spotSel ? spots.find(x => x.id === state.spotSel) : null;
+  map.getSource('sel').setData(r
+    ? { type: 'FeatureCollection', features: [{ type: 'Feature', properties: {}, geometry: r.geometry }] }
+    : emptyFC);
+  map.getSource('spotSel').setData(s
+    ? { type: 'FeatureCollection', features: [{ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [s.lon, s.lat] } }] }
+    : emptyFC);
+}
+
 function bootMap() {
   if (!window.maplibregl || !geomReady) return;
   attachGeometry();
@@ -345,6 +368,7 @@ function bootMap() {
   const s0 = state.spotSel ? spots.find(x => x.id === state.spotSel) : null;
   if (r0) fitToRoute(r0, 0);
   else if (s0) fitToSpot(s0, 0);
+  paintSelection();
 }
 window.__initMap = bootMap;
 window.__onGeomReady = () => { geomReady = true; bootMap(); };
@@ -617,13 +641,7 @@ function select(id) {
   state.selected = id;
   // 详情面板只有一块 378px 的地方，路线和赏秋点两个选中必须互斥
   state.spotSel = null;
-  if (map) map.getSource('spotSel').setData(emptyFC);
-  if (map) {
-    map.getSource('sel').setData({
-      type: 'FeatureCollection',
-      features: [{ type: 'Feature', properties: {}, geometry: r.geometry }],
-    });
-  }
+  paintSelection();
   // 留白必须按屏幕实际算，别写死：原来这里是 { top:200, right:430, bottom:70, left:70 }，
   // 那是给桌面右侧面板配的，窄屏下把可用宽度压成负的，地图干脆不动。见 fitToRoute()。
   // 窄屏收起状态下点中一条：得先把面板放出来，否则详情渲染在一个 48px 的横条里，
@@ -646,7 +664,7 @@ function backToList() {
   state.spotSel = null;
   // 收起状态下点「返回列表」得先把面板放出来，否则列表是隐藏的，用户对着一条空条发呆
   setPanelCollapsed(false);
-  if (map) { map.getSource('sel').setData(emptyFC); map.getSource('spotSel').setData(emptyFC); }
+  paintSelection();
   document.getElementById('detail').hidden = true;
   document.getElementById('list').hidden = false;
   document.getElementById('btn-back').hidden = true;
@@ -931,13 +949,7 @@ function selectSpot(id) {
   if (!s) return;
   state.spotSel = id;
   state.selected = null;
-  if (map) {
-    map.getSource('sel').setData(emptyFC);
-    map.getSource('spotSel').setData({
-      type: 'FeatureCollection',
-      features: [{ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [s.lon, s.lat] } }],
-    });
-  }
+  paintSelection();
   // 同一个理由：窄屏收起时点它，先把面板放出来再飞（见 select()）
   const wasCollapsed = document.getElementById('panel').classList.contains('collapsed');
   if (wasCollapsed) setPanelCollapsed(false);
