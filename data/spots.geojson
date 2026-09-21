@@ -34,6 +34,37 @@
      28.836895
     ]
    }
+  },
+  {
+   "type": "Feature",
+   "id": "fukan-jinhua-rescue",
+   "properties": {
+    "id": "fukan-jinhua-rescue",
+    "name": "俯瞰金华被救援点",
+    "kind": "其他",
+    "region": "兰溪市",
+    "lon": 119.657999,
+    "lat": 29.240739,
+    "coord_src": "用户手标（WGS-84）",
+    "coord_acc_m": 50,
+    "intro": "2026年9月6日，俯瞰金华北山十小时历险记被救援地点",
+    "access": "",
+    "verified_at": "2026-09-06",
+    "tags": [],
+    "nav_gcj": {
+     "lon": 119.662732,
+     "lat": 29.237906
+    },
+    "best_i_from": null,
+    "best_i_to": null
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     119.657999,
+     29.240739
+    ]
+   }
   }
  ]
 }
