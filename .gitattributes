@@ -12,3 +12,6 @@
 *.jpg binary
 *.jpeg binary
 *.png binary
+
+# 图标同样是二进制（.ico 里塞的是 PNG），写明白
+*.ico binary

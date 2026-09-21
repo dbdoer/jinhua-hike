@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="金华徒步">
+  <title>金华徒步</title>
+  <!-- 苹果 touch icon 用：不留圆角。iOS 自己会切圆角，我们再切一道就是双重圆角、四角发黑 -->
+  <rect width="64" height="64" fill="#059669"/>
+  <circle cx="47" cy="16" r="5.5" fill="#fcd34d"/>
+  <path d="M0 64 L23 22 L35 41 L43 29 L64 64 Z" fill="#ffffff"/>
+</svg>

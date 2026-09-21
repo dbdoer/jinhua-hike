@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="金华徒步">
+  <title>金华徒步</title>
+  <defs>
+    <clipPath id="squircle">
+      <rect width="64" height="64" rx="15" ry="15"/>
+    </clipPath>
+  </defs>
+  <!-- 山落到画面底边，不悬空：之前基线留在 54，底下一条 10px 的绿带，看着像山浮着。
+       落到底之后底角会被圆角切掉一点，那正好，像是「山从画面里长出来」。 -->
+  <g clip-path="url(#squircle)">
+    <rect width="64" height="64" fill="#059669"/>
+    <circle cx="47" cy="16" r="5.5" fill="#fcd34d"/>
+    <path d="M0 64 L23 22 L35 41 L43 29 L64 64 Z" fill="#ffffff"/>
+  </g>
+</svg>

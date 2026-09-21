@@ -29,6 +29,9 @@ jinhua-hike/
 ├── index.html          页面骨架（筛选条 / 地图 / 面板 / 图例）
 ├── app.js              全部前端逻辑：地图、筛选、列表、详情、剖面
 ├── style.css
+├── favicon.svg          站点图标（矢量，现代浏览器优先用这个）
+├── favicon.ico          同图的 16/32/48 三档（浏览器按约定讨的 /favicon.ico、Windows 快捷方式）
+├── apple-touch-icon.png 180px 方角版（iOS 加到主屏用）
 ├── vendor/             MapLibre GL 本地兜底（主路径走七牛 CDN，CDN 挂了它接管）
 ├── data/               构建产物，由 tools/ 下的脚本生成
 │   ├── routes.json     完整数据（含 geometry / annotations）
@@ -49,8 +52,41 @@ jinhua-hike/
 │   ├── prep_photos.py  赏秋点照片压 WebP（手动跑一次，不进流水线）
 │   └── data/jinhua_counties.json   金华 9 个县市区的行政边界多边形
 ├── docs/               README 用的演示截图（demo-*.png，随版本库走）
+│   ├── multi-theme.md  多题材改造清单（徒步 / 玩水 / 赏秋）
+│   └── icons/          图标的两个尺寸变体源码（见下节）
 └── shots/              自测截图（不进版本库）
 ```
+
+## 站点图标怎么来的
+
+同一张图，三份产物。源码是 `favicon.svg`（主图）加 `docs/icons/` 里两个变体：
+
+- `favicon.svg` —— 绿底、白色双峰、右上角一点太阳（跟页面上那个品牌绿点一个色 `#059669`）
+- `docs/icons/favicon-16.svg` —— **16px 是重画的，不是缩小的。** 大图缩到 16px 会糊：
+  实测太阳糊成一团黄绿、山脊全是半透明过渡色；小尺寸专版把太阳放大、脊线压到半像素上
+- `docs/icons/favicon-square.svg` —— 苹果版，**不留圆角**（iOS 自己会切圆角，我们再切
+  一道就是双重圆角、四角发黑）
+
+生成过程留在 `tools/` 里了（一次性脚本，不进流水线）：
+
+```bash
+cd E:/code/jinhua-hike
+NODE_PATH="$LOCALAPPDATA/Temp/jh-hike/node_modules" node tools/render_icons.js   # 需要本机 Chrome
+python tools/build_icons.py                                                      # 拼 ICO，需要 Pillow
+```
+
+两条都是踩出来的：
+
+1. **渲染前必须把 SVG 的固有 `width/height` 换成 `100%`** —— SVG 带着 `width="64"` 时
+   Chrome 就按 64px 画，视口小于 64 截到的是左上角那一块（真踩过：32px 那格画出来
+   是半个圆角）。脚本里改完会断言一次，改不掉直接抛。
+2. 截图要 `omitBackground`，否则圆角外面糊上白底。
+
+`build_icons.py` 把 16/32/48 三张 PNG 手拼进 ICO 容器（PNG 载荷直接塞，Vista 以后都认），
+拼完两头都验：Pillow 能列出三档尺寸、浏览器 `<img>` 能解码出 48x48。
+
+`index.html` 里三个 `<link rel="icon">` 全写上——只留 SVG 的话，按约定讨
+`/favicon.ico` 的客户端（老浏览器、部分爬虫、Windows 快捷方式）照样扑空。
 
 ## 数据管线
 

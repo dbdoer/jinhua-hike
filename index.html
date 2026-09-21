@@ -4,6 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>金华徒步路线</title>
+<!-- 站点图标。三份各有各的用处，别只留一个：
+     favicon.ico  —— 浏览器和 Windows 快捷方式默认会去讨 /favicon.ico，没有就每次 404
+     favicon.svg  —— 现代浏览器优先用，矢量、任意尺寸都清楚
+     apple-touch-icon.png —— iOS 加到主屏用，180px、方角（iOS 自己切圆角，我们再切一道
+                             就是双重圆角、四角发黑） -->
+<link rel="icon" href="favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#059669">
 <!-- maplibre 的 CSS/JS 改走国内 CDN（七牛 staticfile）：实测完整下载 415ms，
      源站（GitHub Pages 东京）749ms。CDN 上是同版 5.6.0 的压缩构建。
      任一路失败都回落到本地 vendor/。兜底函数必须在 <head> 里定义 ——
