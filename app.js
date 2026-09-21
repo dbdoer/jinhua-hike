@@ -791,13 +791,17 @@ function renderDetail(r) {
     <h4>路线档案 / 数据来源</h4>
     ${navRow('数据来源', esc(s.provider || '—'))}
     ${navRow('上传者', esc(s.creator || '—'))}
-    <!-- 这里原本还有「两步路轨迹 ID」与「上传者 ID」两行，已删。
-         昵称是版权署名，必须留；TrackId 和上传者的数字 ID 属于个人信息里
-         没有必要展示的那部分。注意：TrackId 仍以线路主键 id（tb_XXXX）的形式
-         存在于 URL 与 data/*.js 中，动它会让已分享的链接全部失效，有意保留。 -->
+    <!-- 这一节原本还有三行，已删：「两步路轨迹 ID」「上传者 ID」「GPX 文件」。
+         昵称是版权署名，必须留；TrackId 与上传者的数字 ID 属于个人信息里没有
+         必要展示的那部分。GPX 文件那行印的是源文件名，等于把原始文件那条直达
+         地址也指出来了 —— 站点发布的是整个仓库，源文件就在发布范围内，删掉这行
+         是为了不再主动指路（并不是关上了门，见 README）。
+         注意：TrackId 仍以线路主键 id（tb_XXXX）的形式存在于 URL 与 data/*.js 中，
+         动它会让已分享的链接全部失效，有意保留。
+         也提醒一句：显示名就是用文件名改的，所以"文件名"其实约等于标题，
+         这一档挡的是"路径"，不是"名字"。 -->
     ${navRow('录制 App 版本', esc(s.app_version || '—'))}
     ${navRow('轨迹录制日期', exported || '—')}
-    ${navRow('GPX 文件', esc(s.file || '—'))}
     ${navRow('难度判定依据', esc(r.difficulty_reason || '—'))}
     ${navRow('亲子判定依据', r.family === true ? esc(r.family_reason || '—') : '未判定为亲子')}
     ${navRow('涉水判定依据', r.has_water === true ? esc(r.water_reason || '—') : '未识别到涉水关键词')}
