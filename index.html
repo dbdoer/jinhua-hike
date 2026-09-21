@@ -170,6 +170,14 @@ window._hmt = window._hmt || [];
 
 <div id="toast" class="toast" hidden></div>
 
+<!-- 复制链接失败时的最后一条路：把链接摆在屏幕上让人自己选、自己复制。
+     没有它，剪贴板被拒 + 系统分享面板弹不出来时，点「分享链接」就是彻底静音。 -->
+<div id="copybox" class="copybox" hidden>
+  <div class="hd">链接已选好，按 Ctrl/⌘ + C 复制</div>
+  <input id="copybox-input" readonly spellcheck="false">
+  <button type="button" onclick="hideCopyBox()">关闭</button>
+</div>
+
 
 <!-- 列表元数据 + 逻辑先上（首屏只要这两样）。maplibre（~250KB）和几何
      （~130KB）各用 async 单独拉，到位后各自回调；两个齐了才建图。 -->

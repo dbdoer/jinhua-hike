@@ -118,14 +118,25 @@ function shareTitle() {
   return '金华徒步路线';
 }
 
-/* 手机上优先叫出系统分享面板（微信、钉钉、短信都在里面），桌面没有就退回复制链接。 */
+/* 是不是真·触摸设备。桌面 Chrome/Edge 上 navigator.share 也是 function（那是 Windows
+   的系统分享面板），但那个面板弹不出来时 Chrome 抛的**也是** AbortError（实测文案
+   "Share failed"）—— 而 AbortError 在我们这里原本等于「用户自己取消了，别唠叨」，
+   于是点分享屏幕上什么都不发生，用户只能报「点了没反应」。
+   实测（Chrome 153 / Windows / 线上）：
+     navigator.share → function；调一次 → reject AbortError / Share failed；toast 没出。
+   桌面要的本来也不是系统面板，是一串能粘进微信的链接。 */
+function isTouchDevice() {
+  return (navigator.maxTouchPoints || 0) > 0 && window.matchMedia('(pointer: coarse)').matches;
+}
+
+/* 手机上优先叫出系统分享面板（微信、钉钉、短信都在里面），桌面直接复制链接。 */
 async function doShare() {
   const url = shareUrl(), title = shareTitle();
   track('分享', state.spotSel ? '赏秋点' : '路线', title);
-  if (navigator.share) {
+  if (navigator.share && isTouchDevice()) {
     try { await navigator.share({ title, text: title, url }); return; }
     catch (e) {
-      if (e && e.name === 'AbortError') return;   // 用户自己取消的，别再弹一句
+      if (e && e.name === 'AbortError') return;   // 触摸设备上，这确实是用户按了取消
       /* 其他原因失败就往下走，退回复制 */
     }
   }
@@ -924,10 +935,60 @@ function renderSpotDetail(s) {
   document.getElementById('btn-back').hidden = false;
 }
 
+/* 复制链接。三道兜底，任何一条走到头都得在屏幕上留下点东西 ——
+   「点了没反应」是不可接受的：① clipboard API（要安全上下文 + 权限）
+   ② execCommand 老办法 ③ 都不行就把链接摆出来让用户自己选、自己复制。
+   注意别写成 `navigator.clipboard?.writeText(t).then(...)`：剪贴板 API 不在时
+   那个可选链求值成 undefined，再 .then 直接 TypeError，连失败提示都弹不出来。 */
 function copy(t) {
-  navigator.clipboard?.writeText(t).then(
-    () => toast('已复制：' + t), () => toast('复制失败，手动选一下吧：' + t));
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(t).then(
+      () => toast('已复制：' + t),
+      () => { if (legacyCopy(t)) toast('已复制：' + t); else copyBox(t); });
+    return;
+  }
+  if (legacyCopy(t)) toast('已复制：' + t);
+  else copyBox(t);
 }
+
+/* 老办法：临时插一个 textarea、选中、execCommand。没有权限也能成。 */
+function legacyCopy(t) {
+  const ta = document.createElement('textarea');
+  ta.value = t;
+  ta.setAttribute('readonly', '');
+  ta.style.cssText = 'position:fixed;top:-1000px;left:0;opacity:0';
+  document.body.appendChild(ta);
+  ta.select();
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch (_) { ok = false; }
+  ta.remove();
+  return ok;
+}
+
+/* 复制不成，就把链接摆出来让人手动选 —— file:// 或没有剪贴板权限时，这是最后一条路。
+   摆出来也复制不了，那就至少把链接印在提示条上，总之不能静默。 */
+function copyBox(t) {
+  const box = document.getElementById('copybox');
+  const inp = document.getElementById('copybox-input');
+  if (!box || !inp) { toast(t); return; }
+  inp.value = t;
+  box.hidden = false;
+  setTimeout(() => { inp.focus(); inp.select(); }, 0);
+}
+function hideCopyBox() {
+  const box = document.getElementById('copybox');
+  if (box) box.hidden = true;
+}
+/* 点别处 / 按 ESC 关掉链接框。注意要放过刚才那次点击本身（它的 target 就是
+   [data-share] / [data-copy]），否则框会在同一轮事件里被自己关掉。 */
+document.addEventListener('click', e => {
+  const box = document.getElementById('copybox');
+  if (!box || box.hidden || !e.target || !e.target.closest) return;
+  if (e.target.closest('#copybox') || e.target.closest('[data-share]') || e.target.closest('[data-copy]')) return;
+  hideCopyBox();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') hideCopyBox(); });
+
 
 /* 海拔剖面：不再单独存一份高程，直接从 geometry 坐标的第三位 [lng,lat,ele] 现算。
    两个口径上的讲究，都是为了让图上的数字跟上方网格对得上：

@@ -175,6 +175,24 @@ button.primary:hover{background:#047857}
   background:var(--ink);color:#fff;padding:9px 16px;border-radius:10px;font-size:13px;
   box-shadow:var(--shadow);
 }
+/* 复制链接失败时的兜底框。z-index 比 #panel(4) 高，免得窄屏上被底部面板盖住 */
+.copybox{
+  position:absolute;bottom:22px;left:50%;transform:translateX(-50%);z-index:11;
+  width:min(92vw,520px);background:var(--bg);border:1px solid var(--line);
+  border-radius:var(--radius);box-shadow:var(--shadow);padding:11px 12px;
+  display:flex;flex-wrap:wrap;align-items:center;gap:8px;
+}
+.copybox .hd{flex:1 1 100%;font-size:12px;color:var(--ink2)}
+.copybox input{
+  flex:1 1 220px;min-width:0;padding:7px 9px;border:1px solid var(--line);
+  border-radius:9px;background:#f8fafc;color:var(--ink);
+  font:12.5px/1.4 ui-monospace,Consolas,"Courier New",monospace;
+}
+.copybox button{
+  flex:0 0 auto;padding:6px 12px;border:1px solid var(--line);border-radius:9px;
+  background:#fff;color:var(--ink);font-size:12.5px;cursor:pointer;
+}
+.copybox button:hover{background:#f1f5f9}
 .drop,.drop div{display:none}   /* 导入入口已下线（2026-09），样式留着以防将来接后端上传 */
 .maplibregl-popup-content{font:13px/1.5 -apple-system,"Microsoft YaHei",sans-serif;border-radius:10px;padding:9px 12px}
 @media (max-width:900px){
