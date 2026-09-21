@@ -3,7 +3,7 @@
    数据：两步路(2bulu)导出的 GPX -> tools/build_routes.py
          -> data/routes.index.js（列表元数据）+ data/routes.geom.js（几何）
    底图：OpenFreeMap(免费无 key) / OpenTopoMap(等高线) / 卫星影像
-   赏秋点：spots/spots.json（人工打点）-> tools/build_spots.py -> data/spots.js
+   点位：spots/spots.json（人工打点）-> tools/build_spots.py -> data/spots.js
    ========================================================================= */
 'use strict';
 
@@ -15,15 +15,27 @@ const JINHUA = {
   bounds: [[119.05, 28.42], [120.98, 29.82]],
 };
 
-/* 赏秋点：本站自己实地打的位置，跟两步路那批路线是两回事。
+/* 点位：本站自己实地打的位置，跟两步路那批路线是两回事。
    源数据在 spots/spots.json（人工维护、坐标手标、机器只校验），
    走 tools/build_spots.py 生成 data/spots.js —— 也用 <script> 加载，file:// 能跑。 */
+/* 类别配色。跟 tools/build_spots.py 的 KINDS 是同一张表的两份抄写 ——
+   加一个类目，两边都得加，不然点会拿到 undefined 的颜色。 */
 const KIND_COLOR = {
   '水杉': '#c2410c', '银杏': '#ca8a04', '红枫': '#b91c1c', '枫香': '#dc2626',
   '乌桕': '#7c2d12', '芦花': '#a8a29e', '稻田': '#d97706', '油菜花': '#65a30d',
+  // 瀑布用深青，有意跟「起点」那颗天蓝 (#0284c7) 拉开：两者都是圆点，撞色就分不清了
+  '瀑布': '#0e7490',
   '其他': '#ea580c',
 };
 const spots = ((window.SPOT_DATA || {}).spots || []).slice();
+
+/* 旬的刻度。**必须声明在这里**（文件上方），不能跟 seasonText 那几个函数放在一起：
+   下面 `refresh()` 是在模块初始化时就调用的，refresh → seasonText → segText 会读它，
+   而那时文件后半段的 const 还处在 TDZ 里 —— 只要有条数据填了最佳观赏期，
+   整个页面会以「Cannot access 'SEG_LABEL' before initialization」直接停摆（真炸过，
+   2026-09-21 加水门瀑布的时间轴时炸的：地图根本建不起来）。
+   函数声明会提升，const 不会，所以函数放哪儿都行，这份表不行。 */
+const SEG_LABEL = ['上旬', '中旬', '下旬'];
 
 /* 列表只要元数据（routes.index.js，~20KB）；几何（routes.geom.js，~130KB）
    晚一步到，到了再挂上去 —— 首屏不必等它，反正地图本来也得等 maplibre。 */
@@ -99,7 +111,7 @@ function applyHash() {
     if (state.selected !== id) select(id);
     return true;
   }
-  if (!spots.some(x => x.id === id)) { toast('这个赏秋点不在站里了'); return false; }
+  if (!spots.some(x => x.id === id)) { toast('这个点位不在站里了'); return false; }
   if (state.spotSel !== id) selectSpot(id);
   return true;
 }
@@ -113,7 +125,7 @@ function shareTitle() {
   }
   if (state.spotSel) {
     const s = spots.find(x => x.id === state.spotSel);
-    if (s) return s.name + '（' + s.kind + ' · ' + s.region + '）· 金华赏秋点';
+    if (s) return s.name + '（' + s.kind + ' · ' + s.region + '）· 金华点位';
   }
   return '金华徒步路线';
 }
@@ -132,7 +144,7 @@ function isTouchDevice() {
 /* 手机上优先叫出系统分享面板（微信、钉钉、短信都在里面），桌面直接复制链接。 */
 async function doShare() {
   const url = shareUrl(), title = shareTitle();
-  track('分享', state.spotSel ? '赏秋点' : '路线', title);
+  track('分享', state.spotSel ? '点位' : '路线', title);
   if (navigator.share && isTouchDevice()) {
     try { await navigator.share({ title, text: title, url }); return; }
     catch (e) {
@@ -144,7 +156,7 @@ async function doShare() {
 }
 
 /* 分享按钮用事件委托装一次。详情面板每次渲染都把 DOM 重建一遍，给按钮逐个绑
-   既啰嗦、又容易在「路线 / 赏秋点」两套渲染里漏掉一个。 */
+   既啰嗦、又容易在「路线 / 点位」两套渲染里漏掉一个。 */
 document.addEventListener('click', e => {
   const b = e.target && e.target.closest ? e.target.closest('[data-share]') : null;
   if (b) { e.preventDefault(); doShare(); }
@@ -271,7 +283,7 @@ function onStyleReady() {
     },
   });
 
-  // 4) 赏秋点。它是独立的点图层，不参与路线的筛选，也不进左侧列表
+  // 4) 点位。它是独立的点图层，不参与路线的筛选，也不进左侧列表
   map.addSource('spots', { type: 'geojson', data: emptyFC, promoteId: 'id' });
   map.addSource('spotSel', { type: 'geojson', data: emptyFC });
   map.addLayer({
@@ -337,7 +349,7 @@ function initMap() {
 }
 /* 地图要两样齐了才建：maplibre 本体 + 几何数据。两个都是 async 拉的，先后随意。 */
 let geomReady = typeof window.HIKE_GEOM !== 'undefined';
-/* 选中的高亮（路线是加亮的那条线，赏秋点是那圈白光圈）。
+/* 选中的高亮（路线是加亮的那条线，点位是那圈白光圈）。
    抽成一个函数，因为深链冷启动要走第二遍：带 #route= / #spot= 进来时，
    select()/selectSpot() 早就跑过了 —— 那时 map 还是 null，`if (map)` 把 setData
    全挡掉了。bootMap 只补了镜头，于是好友点开链接看到的是一条没有高亮的线、
@@ -497,7 +509,7 @@ function fitToRoute(r, duration) {
   map.fitBounds(boundsOf(r), { padding: fitPadding(), maxZoom: 17, duration: duration || 900 });
 }
 
-// 赏秋点是个点，fitBounds 对它没意义，直接飞过去。留白同样走 fitPadding()。
+// 点位是个点，fitBounds 对它没意义，直接飞过去。留白同样走 fitPadding()。
 function fitToSpot(s, duration) {
   if (!map || !s) return;
   map.flyTo({ center: [s.lon, s.lat], zoom: 14, padding: fitPadding(), duration: duration || 800 });
@@ -564,7 +576,7 @@ function refresh() {
       ? ['==', ['get', 'route_id'], state.selected]
       : ['==', ['get', 'id'], '__none__']);
 
-    // 赏秋点：只受自己那个开关控制，路线怎么筛都不影响它
+    // 点位：只受自己那个开关控制，路线怎么筛都不影响它
     map.setLayoutProperty('spot-dot', 'visibility', state.spotsOn ? 'visible' : 'none');
     map.setLayoutProperty('spot-label', 'visibility', state.spotsOn ? 'visible' : 'none');
     if (!state.spotsOn) map.setLayoutProperty('spot-halo', 'visibility', 'none');
@@ -639,7 +651,7 @@ function select(id) {
   const r = routes.find(x => x.id === id);
   if (!r) return;
   state.selected = id;
-  // 详情面板只有一块 378px 的地方，路线和赏秋点两个选中必须互斥
+  // 详情面板只有一块 378px 的地方，路线和点位两个选中必须互斥
   state.spotSel = null;
   paintSelection();
   // 留白必须按屏幕实际算，别写死：原来这里是 { top:200, right:430, bottom:70, left:70 }，
@@ -905,15 +917,13 @@ document.addEventListener('click', e => {
   openNavApp(a.href, a.dataset.app);
 });
 
-/* --------------------------- 赏秋点 ---------------------------
+/* --------------------------- 点位 ---------------------------
    数据来自 spots/spots.json（人工打点，见 tools/build_spots.py）。
-   和路线分开走：路线是「一条线」，赏秋点是「一个点」，谁也不参与对方的筛选。
+   和路线分开走：路线是「一条线」，点位是「一个点」，谁也不参与对方的筛选。
    唯一共用的是那块详情面板，所以两者选中要互斥。 */
 
-const SEG_LABEL = ['上旬', '中旬', '下旬'];
-
-// 「11-中」-> 从 1 月起算的旬序号（1 月上旬 = 0）。构建期已经算好 best_i_*，
-// 前端不重算一遍，免得同一个字段出现两套口径。
+/* 「11-中」-> 从 1 月起算的旬序号（1 月上旬 = 0）。构建期已经算好 best_i_*，
+   前端不重算一遍，免得同一个字段出现两套口径。 */
 function todaySeg(d) {
   return d.getMonth() * 3 + (d.getDate() <= 10 ? 0 : d.getDate() <= 20 ? 1 : 2);
 }
@@ -955,7 +965,7 @@ function selectSpot(id) {
   if (wasCollapsed) setPanelCollapsed(false);
   else fitToSpot(s, 800);
   renderSpotDetail(s);
-  track('赏秋点', '点开', s.name);
+  track('点位', '点开', s.name);
   syncHash();
 }
 
@@ -1023,8 +1033,9 @@ function renderSpotDetail(s) {
     <div class="links">${nav.join('')}</div>
 
     <div class="note" style="margin-top:14px">
-      这个点是本站自己实地打的位置，拍摄时间见每张图下方。树什么时候变色年年不同，
-      出发前再看一眼本周的实际情况。坐标精度一栏写的是打点时的定位误差，不是树的分布范围。
+      这个点是本站自己实地打的位置，拍摄时间见每张图下方。时节来得早晚年年不同
+      —— 水大水小、叶黄叶红都一样 —— 出发前再看一眼本周的实际情况。
+      坐标精度一栏写的是打点时的定位误差，不是景物的分布范围。
     </div>
   `;
   document.getElementById('detail').querySelectorAll('[data-copy]').forEach(b => {
@@ -1246,9 +1257,19 @@ document.querySelectorAll('#base-switch button').forEach(b => {
   b.onclick = () => { state.base = b.dataset.base; applyBase(); track('底图', '切换', state.base); };
 });
 
-// 赏秋点的总开关：显式的开关，不按别的东西自动推断（这站的规矩）。
+// 点位的总开关：显式的开关，不按别的东西自动推断（这站的规矩）。
 // 但一个点都还没有时，别把开关和图例留在页面上 —— 点了什么都不会发生，
 // 那种控件比没有更糟。spots.json 里一有数据，它们自己就回来。
+/* 图例那行「点位」跟着数据里的类目走：图上是什么颜色，图例就得是什么颜色。
+   原先写死一颗橙点（#c2410c）—— 那是在只有一个类目、也就它一种颜色的年代。
+   加了「瀑布」这个深青色之后，图例就在说谎：图上是深青，图例里找不着。 */
+const legendSpot = document.getElementById('legend-spot');
+if (legendSpot && spots.length) {
+  const kinds = [...new Set(spots.map(s => s.kind))];
+  legendSpot.innerHTML = '<span>点位</span>' + kinds.map(k =>
+    `<span class="kind"><i style="background:${KIND_COLOR[k] || KIND_COLOR['其他']}"></i>${esc(k)}</span>`).join('');
+}
+
 const spotsChk = document.getElementById('f-spots');
 if (!spots.length) {
   if (spotsChk && spotsChk.parentElement) spotsChk.parentElement.hidden = true;
@@ -1267,7 +1288,7 @@ function bindMapEvents() {
   const ROUTE_LAYERS = ['route-line'];
 
   map.on('mousemove', e => {
-    // 赏秋点压在路线上面，命中它就不再管路线，免得两个气泡打架
+    // 点位压在路线上面，命中它就不再管路线，免得两个气泡打架
     const sp = state.spotsOn ? map.queryRenderedFeatures(e.point, { layers: ['spot-dot'] })[0] : null;
     const f = sp ? null : map.queryRenderedFeatures(e.point, { layers: ROUTE_LAYERS })[0];
     map.getCanvas().style.cursor = (sp || f) ? 'pointer' : '';
