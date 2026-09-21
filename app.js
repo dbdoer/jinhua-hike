@@ -25,6 +25,9 @@ const KIND_COLOR = {
   '乌桕': '#7c2d12', '芦花': '#a8a29e', '稻田': '#d97706', '油菜花': '#65a30d',
   // 瀑布用深青，有意跟「起点」那颗天蓝 (#0284c7) 拉开：两者都是圆点，撞色就分不清了
   '瀑布': '#0e7490',
+  // 事件点（事故、救援、纪念之类）用玫红：沿途标注的紫 (#7c3aed) 和难度的红 (#b91c1c)
+  // 都占着了，玫红在这张图上还没人用
+  '事件点': '#be185d',
   '其他': '#ea580c',
 };
 const spots = ((window.SPOT_DATA || {}).spots || []).slice();
@@ -998,7 +1001,7 @@ function renderSpotDetail(s) {
       const g = s.nav_gcj || s;
       const app = mapAppUrl(s);
       const web = `https://uri.amap.com/navigation?to=${g.lon},${g.lat},`
-        + `${encodeURIComponent(s.name)}&mode=car&callnative=1&src=jinhua-autumn-map`;
+        + `${encodeURIComponent(s.name)}&mode=car&callnative=1&src=jinhua-hike-map`;
       return `<a href="${web}"${app ? ` data-app="${esc(app)}"` : ''} target="_blank" rel="noopener">高德导航到这个点</a>`;
     })(),
     `<button data-copy="${s.lat},${s.lon}">复制 WGS-84 坐标</button>`,
