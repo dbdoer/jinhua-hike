@@ -670,22 +670,25 @@ function renderDetail(r) {
   const exported = s.begin_time && !isNaN(d.getTime())
     ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` : null;
 
-  // 百度那条：桌面开网页版标点页，手机调起百度地图 app（见 baiduAppUrl 那段注释）。
+  // 两条地图链接：桌面开网页版，手机调起 app（见 mapAppUrl / baiduAppUrl 那两段注释）。
   // 文案写「打开起点」而不是「导航」—— 手机上是调出 app 标好起点、由你在 app 里点
   // 导航；桌面上就是个标点页。说什么就得是什么，上一版写「导航」是我们自己的错。
-  const bmapApp = baiduAppUrl(r);
+  const amapApp = mapAppUrl(r, r.name + ' 起点');
+  const bmapApp = baiduAppUrl(r, r.name + ' 起点');
+  const g = r.nav_gcj || r.start;
+  const amapWeb = `https://uri.amap.com/navigation?to=${g.lon},${g.lat},`
+    + `${encodeURIComponent(r.name + ' 起点')}&mode=car&callnative=1&src=jinhua-hike-demo`;
   const bmapWeb = `https://api.map.baidu.com/marker?location=${r.start.lat},${r.start.lon}`
     + `&title=${encodeURIComponent(r.name)}&content=轨迹起点&coord_type=wgs84`
     + `&output=html&src=webapp.jinhua.hike`;
 
   const nav = [
-    // 高德：必须走 /navigation（路径规划）。原来用的是 /marker —— 那只是「单点标注」，
-    // 点进去是「这里是哪儿」的逆地理页面，压根不是导航，用户点了发现跳不过去。
-    // 且 /navigation 没有 coordinate 参数，它按 GCJ-02 理解坐标，所以坐标取构建期
-    // 转好的 nav_gcj（给 WGS-84 会被原样透传，落点偏约 560 m）。老数据没这字段时
-    // 退回 start，至少不会拼出个 undefined 的链接。
-    `<a href="https://uri.amap.com/navigation?to=${(r.nav_gcj || r.start).lon},${(r.nav_gcj || r.start).lat},${encodeURIComponent(r.name + ' 起点')}&mode=car&callnative=1&src=jinhua-hike-demo" target="_blank" rel="noopener">高德导航到起点</a>`,
-    `<a href="${bmapWeb}"${bmapApp ? ` data-bmap="${esc(bmapApp)}"` : ''} target="_blank" rel="noopener">百度地图打开起点</a>`,
+    // 高德网页版接口没变（= 桌面走的那条）。它自带的 callnative=1 只在部分浏览器好使，
+    // 官方备注写明「例如微信、QQ」调不起来 —— 手机上真正的调起靠 data-app 里的 scheme。
+    // 坐标取构建期转好的 nav_gcj：这个接口按 GCJ-02 理解坐标，给 WGS-84 会原样透传、
+    // 落点偏约 560 m。老数据没这字段时退回 start，至少不会拼出个 undefined 的链接。
+    `<a href="${amapWeb}"${amapApp ? ` data-app="${esc(amapApp)}"` : ''} target="_blank" rel="noopener">高德导航到起点</a>`,
+    `<a href="${bmapWeb}"${bmapApp ? ` data-app="${esc(bmapApp)}"` : ''} target="_blank" rel="noopener">百度地图打开起点</a>`,
     `<button data-copy="${r.start.lat},${r.start.lon}">复制 WGS-84 坐标</button>`,
     `<button data-locate="${r.id}">地图上定位起点</button>`,
     `<button data-share="1">分享链接</button>`,
@@ -808,23 +811,47 @@ function track(cat, action, label) {
   } catch (_) { /* 统计坏了不能影响页面 */ }
 }
 
-/* --------------------------- 调起百度地图 app ---------------------------
-   网页调起百度地图客户端，scheme 是分平台的（官方「地图调起API」文档）：
-     Android 网页端 → bdapp://map/...   文档原话：native 是 baidumap，web 是 bdapp。
-                                        给 Android 的网页传 baidumap:// 不保证能起。
-     iOS 网页端     → baidumap://map/...
-   动作选「打点」而不是「路线规划」：direction 的起点得靠「我的位置」这个魔法字符串，
-   各家客户端版本容错不一（iOS 文档专门写了一条「7.1 版本才加了对它的容错」），
-   而打点对参数最不挑。进了 app 点一下「导航」就到 —— 我们要的就是「手机上能调出
-   百度地图」，这一步做到了，剩下的交给 app 自己。
+/* --------------------------- 调起地图 app（高德 / 百度） ---------------------------
+   网页里点一个链接去调起手机上的地图 app，scheme 全是分平台的，两家文档都写死了：
 
-   坐标用构建期转好的 nav_gcj（GCJ-02）+ coord_type=gcj02，跟高德那条同一个口径，
-   不另养一份转换。**百度是「先纬度后经度」，跟高德反着来**，别照抄。 */
-function baiduAppUrl(o) {
-  if (!isTouchDevice()) return null;          // 桌面没有 app 可言，走网页版标点页
+     高德  Android → androidamap://navi?...     iOS → iosamap://navi?...
+     百度  Android → bdapp://map/...            iOS → baidumap://map/...
+                    （百度文档原话：native 是 baidumap，web 是 bdapp）
+
+   高德那条为什么必须换成 scheme：官方对 uri.amap.com 的 callnative=1 自己写了备注
+   「部分第三方平台内置浏览器无法成功调起，例如微信、QQ」。用户就是在手机上点了没反应。
+
+   高德 scheme 用 /navi（不是 /path）：文档定义是「输入终点，以用户当前位置为起点开始
+   路线导航」，正是「导航到起点」要的东西。lat/lon 分开传、**先纬度后经度**，
+   跟 uri.amap.com 那条的 lon,lat 是反的。dev=0 = 坐标已加密（我们给的是构建期转好
+   的 GCJ-02），dev=1 会让客户端再加密一次、落点偏出去。
+   百动用 /map/marker 打点：direction 的起点得靠「我的位置」这个魔法字符串，各家客户端
+   容错不一（iOS 文档专门写「7.1 版本才加了容错」）。进了 app 点一下「导航」就到。
+
+   两家都复用同一份 nav_gcj，不另养转换。 */
+function mapAppUrl(o, label) {
+  if (!isTouchDevice()) return null;          // 桌面没有 app 可言，走网页版
+  const g = o.nav_gcj || o;
+  const ua = navigator.userAgent;
+  const name = label || o.name || '';
+  if (/Android/i.test(ua)) {
+    return 'androidamap://navi?sourceApplication=jinhua-hike'
+      + '&poiname=' + encodeURIComponent(name) + '&lat=' + g.lat + '&lon=' + g.lon
+      + '&dev=0&style=2';
+  }
+  if (/iPhone|iPad|iPod/i.test(ua)) {
+    return 'iosamap://navi?sourceApplication=jinhua-hike'
+      + '&poiname=' + encodeURIComponent(name) + '&lat=' + g.lat + '&lon=' + g.lon
+      + '&dev=0&style=2';
+  }
+  return null;
+}
+
+function baiduAppUrl(o, label) {
+  if (!isTouchDevice()) return null;
   const g = o.nav_gcj || o;
   const q = 'location=' + g.lat + ',' + g.lon
-    + '&title=' + encodeURIComponent((o.name || '') + ' 起点')
+    + '&title=' + encodeURIComponent(label || ((o.name || '') + ' 起点'))
     + '&content=' + encodeURIComponent('金华徒步路线起点 · ijinhua.com')
     + '&coord_type=gcj02';
   // src 是必选，格式文档写死为 <平台>.<公司>.<应用>；不传（或传成网页那套 webapp.）
@@ -837,11 +864,11 @@ function baiduAppUrl(o) {
 
 /* 调 app 这件事没法「试探」：没装 app 的时候浏览器什么都不做，页面静悄悄留在原地
    —— 又一个「点了没反应」。所以给 1.6 秒的时限：页面还醒着、还握着焦点，就当没装
-   app，转去网页版标点页。
+   app，转去网页版。
    判「页面还醒着」要看两样：document.hidden（标准切换）+ document.hasFocus()。
    只认前者会漏掉一类 WebView（微信里的就是）—— 它们把 app 调到前台时不发
-   visibilitychange，但焦点一定是丢了。判漏的后果是把人从百度地图里拽出来。 */
-function openBaiduApp(href, scheme) {
+   visibilitychange，但焦点一定是丢了。判漏的后果是把人从地图 app 里拽出来。 */
+function openNavApp(href, scheme) {
   let done = false;
   const give = () => { if (!done) { done = true; location.href = href; } };
   const t = setTimeout(() => { if (!document.hidden && document.hasFocus()) give(); }, 1600);
@@ -851,13 +878,13 @@ function openBaiduApp(href, scheme) {
   try { location.href = scheme; } catch (_) { clearTimeout(t); give(); }
 }
 
-/* 百度那条链接：桌面照旧走 href（网页版标点页），手机改成调起 app。
+/* 带 data-app 的链接（高德 / 百度各一条）：桌面照旧走 href（网页版），手机改调 app。
    href 留着不删，正常链接该有的行为（右键、长按、无 JS）都还在。 */
 document.addEventListener('click', e => {
-  const a = e.target && e.target.closest ? e.target.closest('[data-bmap]') : null;
-  if (!a || !a.dataset.bmap) return;
+  const a = e.target && e.target.closest ? e.target.closest('[data-app]') : null;
+  if (!a || !a.dataset.app) return;
   e.preventDefault();
-  openBaiduApp(a.href, a.dataset.bmap);
+  openNavApp(a.href, a.dataset.app);
 });
 
 /* --------------------------- 赏秋点 ---------------------------
@@ -943,8 +970,15 @@ function photoBlock(s) {
 function renderSpotDetail(s) {
   const season = seasonText(s);
   const nav = [
-    // 同上：/navigation 才是导航，且坐标必须是构建期转好的 GCJ-02（nav_gcj）
-    `<a href="https://uri.amap.com/navigation?to=${(s.nav_gcj || s).lon},${(s.nav_gcj || s).lat},${encodeURIComponent(s.name)}&mode=car&callnative=1&src=jinhua-autumn-map" target="_blank" rel="noopener">高德导航到这个点</a>`,
+    // 同上：桌面走网页版 /navigation，手机靠 data-app 里的 scheme 调起高德 app。
+    // 坐标必须是构建期转好的 GCJ-02（nav_gcj）。
+    (() => {
+      const g = s.nav_gcj || s;
+      const app = mapAppUrl(s);
+      const web = `https://uri.amap.com/navigation?to=${g.lon},${g.lat},`
+        + `${encodeURIComponent(s.name)}&mode=car&callnative=1&src=jinhua-autumn-map`;
+      return `<a href="${web}"${app ? ` data-app="${esc(app)}"` : ''} target="_blank" rel="noopener">高德导航到这个点</a>`;
+    })(),
     `<button data-copy="${s.lat},${s.lon}">复制 WGS-84 坐标</button>`,
     `<button data-locate="${s.id}">地图上定位</button>`,
     `<button data-share="1">分享链接</button>`,
