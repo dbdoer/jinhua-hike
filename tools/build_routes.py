@@ -399,7 +399,9 @@ def parse_gpx(path):
             "provider": "两步路(2bulu)",
             "track_id": gpx_ext.get("TrackId"),
             "creator": gpx_ext.get("CreaterName"),
-            "creator_id": gpx_ext.get("CreaterId"),
+            # creator_id 有意不写进产物：上传者的数字 ID 在界面上没有用处，
+            # 也没有展示的必要（个人信息最小必要）。原始值仍留在 gpx/*.gpx 里，
+            # 真要追溯某条轨迹的来源，看原始文件即可。
             "app_version": gpx_ext.get("ProductVersion"),
             "begin_time": gpx_ext.get("BeginTime"),
             "file": os.path.basename(path),

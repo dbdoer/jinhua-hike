@@ -791,9 +791,11 @@ function renderDetail(r) {
 
     <h4>路线档案 / 数据来源</h4>
     ${navRow('数据来源', esc(s.provider || '—'))}
-    ${navRow('两步路轨迹 ID', s.track_id ? esc(s.track_id) : '—')}
     ${navRow('上传者', esc(s.creator || '—'))}
-    ${navRow('上传者 ID', esc(s.creator_id || '—'))}
+    <!-- 这里原本还有「两步路轨迹 ID」与「上传者 ID」两行，已删。
+         昵称是版权署名，必须留；TrackId 和上传者的数字 ID 属于个人信息里
+         没有必要展示的那部分。注意：TrackId 仍以线路主键 id（tb_XXXX）的形式
+         存在于 URL 与 data/*.js 中，动它会让已分享的链接全部失效，有意保留。 -->
     ${navRow('录制 App 版本', esc(s.app_version || '—'))}
     ${navRow('轨迹录制日期', exported || '—')}
     ${navRow('GPX 文件', esc(s.file || '—'))}
@@ -1448,7 +1450,7 @@ function parseGpxText(text, filename) {
     annotations: wpts.filter(w => w.name || w.desc),
     source: {
       provider: '两步路(2bulu) · 本地导入', track_id: ext.TrackId || null,
-      creator: ext.CreaterName || null, creator_id: ext.CreaterId || null,
+      creator: ext.CreaterName || null,
       app_version: ext.ProductVersion || null, begin_time: ext.BeginTime || null, file: filename,
       // 上传者在 GPX 里写的名字（可能带录制时刻、也可能与文件名不同）。只备查，不显示。
       gpx_name: ext.name || null,
