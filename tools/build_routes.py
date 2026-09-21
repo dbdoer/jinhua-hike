@@ -429,6 +429,13 @@ def main():
         except Exception as e:  # noqa: BLE001
             bad.append((f, repr(e)))
             continue
+        # 导航用的坐标（GCJ-02）。高德的路径规划接口 /navigation 的参数表里**没有**
+        # coordinate —— 它按 GCJ-02 理解坐标，实测带 coordinate=wgs84 也照样原样透传、
+        # 不替我们转（带这个参数的是 /marker，而 /marker 只是「单点标注」，点进去是
+        # 「这里是哪儿」的逆地理页面，根本不是导航 —— 曾经就是栽在这里）。
+        # 所以给导航链接的坐标必须在构建期转好，前端只读不重算。
+        gx, gy = _wgs2gcj(r["start"]["lon"], r["start"]["lat"])
+        r["nav_gcj"] = {"lon": round(gx, 6), "lat": round(gy, 6)}
         feats.append({
             "type": "Feature",
             "properties": {k: v for k, v in r.items()

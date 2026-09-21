@@ -22,6 +22,8 @@ import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from build_routes import _wgs2gcj   # noqa: E402  WGS-84 -> GCJ-02 只保留一份实现，别抄第二份
 
 # 与 app.js 的 DIFF_COLOR / JINHUA 一样，这里是同一套事实的第二份抄写 ——
 # 改一边必须改另一边，别让「赏秋点」和「徒步路线」对市区县名字有两套说法。
@@ -184,6 +186,10 @@ def build(data, out_dir, photos_dir):
     for s in data["spots"]:
         o = dict(s)
         # 派生字段在构建期算好，前端别再写第二套口径
+        # 导航用的 GCJ-02 坐标，理由同 build_routes.py：/navigation 没有 coordinate
+        # 参数，它按 GCJ-02 理解坐标。转换实现直接借用，别在这里养第二份。
+        gx, gy = _wgs2gcj(s["lon"], s["lat"])
+        o["nav_gcj"] = {"lon": round(gx, 6), "lat": round(gy, 6)}
         o["best_i_from"] = seg_index(s.get("best_from"))
         o["best_i_to"] = seg_index(s.get("best_to"))
         o["photos"] = [dict(p, src="spots/photos/" + p["file"]) for p in (s.get("photos") or [])]

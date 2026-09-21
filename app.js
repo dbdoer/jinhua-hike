@@ -660,7 +660,12 @@ function renderDetail(r) {
     ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` : null;
 
   const nav = [
-    `<a href="https://uri.amap.com/marker?position=${r.start.lon},${r.start.lat}&name=${encodeURIComponent(r.name + ' 起点')}&coordinate=wgs84&callnative=1&src=jinhua-hike-demo" target="_blank" rel="noopener">高德导航到起点</a>`,
+    // 必须走 /navigation（路径规划）。原来用的是 /marker —— 那只是「单点标注」，
+    // 点进去是「这里是哪儿」的逆地理页面，压根不是导航，用户点了发现跳不过去。
+    // 且 /navigation 没有 coordinate 参数，它按 GCJ-02 理解坐标，所以坐标取构建期
+    // 转好的 nav_gcj（给 WGS-84 会被原样透传，落点偏约 560 m）。老数据没这字段时
+    // 退回 start，至少不会拼出个 undefined 的链接。
+    `<a href="https://uri.amap.com/navigation?to=${(r.nav_gcj || r.start).lon},${(r.nav_gcj || r.start).lat},${encodeURIComponent(r.name + ' 起点')}&mode=car&callnative=1&src=jinhua-hike-demo" target="_blank" rel="noopener">高德导航到起点</a>`,
     `<a href="https://api.map.baidu.com/marker?location=${r.start.lat},${r.start.lon}&title=${encodeURIComponent(r.name)}&content=轨迹起点&coord_type=wgs84&output=html&src=webapp.jinhua.hike" target="_blank" rel="noopener">百度导航到起点</a>`,
     `<button data-copy="${r.start.lat},${r.start.lon}">复制 WGS-84 坐标</button>`,
     `<button data-locate="${r.id}">地图上定位起点</button>`,
@@ -867,7 +872,8 @@ function photoBlock(s) {
 function renderSpotDetail(s) {
   const season = seasonText(s);
   const nav = [
-    `<a href="https://uri.amap.com/marker?position=${s.lon},${s.lat}&name=${encodeURIComponent(s.name)}&coordinate=wgs84&callnative=1&src=jinhua-autumn-map" target="_blank" rel="noopener">高德导航到这个点</a>`,
+    // 同上：/navigation 才是导航，且坐标必须是构建期转好的 GCJ-02（nav_gcj）
+    `<a href="https://uri.amap.com/navigation?to=${(s.nav_gcj || s).lon},${(s.nav_gcj || s).lat},${encodeURIComponent(s.name)}&mode=car&callnative=1&src=jinhua-autumn-map" target="_blank" rel="noopener">高德导航到这个点</a>`,
     `<button data-copy="${s.lat},${s.lon}">复制 WGS-84 坐标</button>`,
     `<button data-locate="${s.id}">地图上定位</button>`,
     `<button data-share="1">分享链接</button>`,
