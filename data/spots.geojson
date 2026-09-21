@@ -1,4 +1,37 @@
 {
  "type": "FeatureCollection",
- "features": []
+ "features": [
+  {
+   "type": "Feature",
+   "id": "shuimen-pubu",
+   "properties": {
+    "id": "shuimen-pubu",
+    "name": "水门瀑布",
+    "kind": "其他",
+    "region": "婺城区",
+    "lon": 119.426532,
+    "lat": 28.836895,
+    "coord_src": "Google Earth 手标（WGS-84）",
+    "coord_acc_m": 50,
+    "intro": "上南坑村西南约 1.1 km 处的溪谷瀑布。",
+    "access": "",
+    "tags": [
+     "瀑布"
+    ],
+    "nav_gcj": {
+     "lon": 119.431674,
+     "lat": 28.834034
+    },
+    "best_i_from": null,
+    "best_i_to": null
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     119.426532,
+     28.836895
+    ]
+   }
+  }
+ ]
 }

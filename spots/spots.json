@@ -1,6 +1,20 @@
 {
   "schema": 1,
-  "note": "人工维护。坐标手标、带来源与精度；机器只校验，不替你选点。改完跑 python tools/build_spots.py。现在是空的 —— 照 README「赏秋点」一节加第一条。",
+  "note": "人工维护。坐标手标、带来源与精度；机器只校验，不替你选点。改完跑 python tools/build_spots.py。加点的流程见 README「加一个点的流程」。",
   "updated": "2026-09-21",
-  "spots": []
+  "spots": [
+    {
+      "id": "shuimen-pubu",
+      "name": "水门瀑布",
+      "kind": "其他",
+      "region": "婺城区",
+      "lon": 119.426532,
+      "lat": 28.836895,
+      "coord_src": "Google Earth 手标（WGS-84）",
+      "coord_acc_m": 50,
+      "intro": "上南坑村西南约 1.1 km 处的溪谷瀑布。",
+      "access": "",
+      "tags": ["瀑布"]
+    }
+  ]
 }
