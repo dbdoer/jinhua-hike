@@ -119,6 +119,14 @@ button.primary:hover{background:#047857}
 .tag.t-anno{background:#f5f3ff;color:#6d28d9}
 .empty{color:var(--ink2);font-size:13px;padding:18px 8px;line-height:1.9}
 .empty code{background:#f1f5f9;padding:1px 5px;border-radius:5px;font-size:12px}
+/* 面板底部：撤下通道。固定高度、不参与滚动（.list/.detail 各自 flex:1 抢剩余空间），
+   所以在列表和详情两种状态下都露脸，且不占地图。 */
+.panel-foot{
+  flex:0 0 auto;padding:7px 14px;border-top:1px solid var(--line);
+  font-size:11px;line-height:1.5;color:var(--ink3);background:#fafbfc;
+}
+.panel-foot a{color:var(--ink2);text-decoration:underline}
+.panel-foot a:hover{color:var(--ink)}
 
 /* ---------- 详情 ---------- */
 .detail{padding:14px 16px 28px}
@@ -221,6 +229,8 @@ button.primary:hover{background:#047857}
   /* 收起来只留标题条，给地图腾出整块地方 */
   #panel.collapsed{height:48px}
   #panel.collapsed .list,#panel.collapsed .detail{display:none}
+  /* 收起时页脚一起藏：48px 的横条塞不下两行字，不藏会被 overflow 切一半，更难看 */
+  #panel.collapsed .panel-foot{display:none}
   #panel.collapsed .panel-head{border-bottom:none}
   .collapse-toggle{display:inline-flex}
   .legend{display:none}

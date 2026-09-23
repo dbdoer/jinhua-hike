@@ -164,6 +164,16 @@ window._hmt = window._hmt || [];
   </div>
   <div id="list" class="list"></div>
   <div id="detail" class="detail" hidden></div>
+
+  <!-- 撤下通道。这不是装饰：站上摆的是别人的作品，就得给出「我不想被摆」的出口。
+       为什么不放图例旁边 —— 窄屏 .legend 是 display:none，跟着它走手机上就看不见了；
+       放地图上又会挡底图。面板底部是唯一宽窄屏都露脸、又不占地的地方。
+       窄屏把面板收成 48px 时这条一起藏（见 style.css 的 #panel.collapsed），
+       那是用户自己收的，可以接受。 -->
+  <footer class="panel-foot">
+    版权归上传者所有 · 撤下自己的轨迹请邮件
+    <a href="mailto:ijinhua2026@163.com?subject=%E8%AF%B7%E6%B1%82%E6%92%A4%E4%B8%8B%E8%BD%A8%E8%BF%B9">ijinhua2026@163.com</a>
+  </footer>
 </aside>
 
 <!-- 图例 -->

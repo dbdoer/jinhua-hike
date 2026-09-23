@@ -808,7 +808,10 @@ function renderDetail(r) {
     ${navRow('爬升估算口径', '3 m 滞回阈值滤 GPS 高程抖动，仍属估算')}
 
     <div class="note" style="margin-top:14px">
-      轨迹版权归上传者所有，本页仅作展示演示；出行前请以现场路况、天气和景区公告为准。
+      轨迹版权归上传者所有，本页仅作展示演示；出行前请以现场路况、天气和景区公告为准。<br>
+      如果你是这条轨迹的上传者、不希望它出现在这里，发邮件到
+      <a href="mailto:ijinhua2026@163.com?subject=%E8%AF%B7%E6%B1%82%E6%92%A4%E4%B8%8B%E8%BD%A8%E8%BF%B9">ijinhua2026@163.com</a>
+      写明路线名即可，我们撤下 —— 面板底部那行也是这个入口，不必翻到这里。
     </div>
   `;
   document.getElementById('detail').querySelectorAll('[data-copy]').forEach(b => {
