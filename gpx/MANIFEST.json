@@ -1,7 +1,7 @@
 {
  "note": "gpx/ 里原始 GPX 文件的字节指纹。任何一项对不上，都意味着「下载原始 GPX」给出去的已经不是上传者导出的那串字节。.gitattributes 里 *.gpx 标了 -text，禁止 git 做行尾转换 —— 别去掉它。用 python tools/check_gpx_manifest.py 校验。",
  "algorithm": "sha256",
- "count": 60,
+ "count": 62,
  "files": [
   {
    "file": "三县第一潭三瀑.gpx",
@@ -289,6 +289,20 @@
    "sha256": "a419df990fbc8923704d46ba522bb3d5bfd8b4d1fb0c1cbbf3268e0789147dd9",
    "track_id": "78185877",
    "name": "灶头大盘尖260121"
+  },
+  {
+   "file": "灶头大盘尖经典赏雪线路.gpx",
+   "bytes": 362362,
+   "sha256": "4618f49aba279f4b66321366a8a6e80d21e0d156be3041b4def34e381580bb40",
+   "track_id": "78221345",
+   "name": "灶头大盘尖经典赏雪线路"
+  },
+  {
+   "file": "灶头盘前赏花线路.gpx",
+   "bytes": 338817,
+   "sha256": "d17a86c110b9d0ce6e208379dd9db8120adc2f9f01cf3640cb2a343a8e6e6947",
+   "track_id": "90146383",
+   "name": "兆头盘前赏花线路"
   },
   {
    "file": "琅峰山260517.gpx",
