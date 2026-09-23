@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "note": "人工维护。坐标手标、带来源与精度；机器只校验，不替你选点。改完跑 python tools/build_spots.py。加点的流程见 README「加一个点的流程」。",
-  "updated": "2026-09-21",
+  "updated": "2026-09-23",
   "spots": [
     {
       "id": "shuimen-pubu",
@@ -16,7 +16,9 @@
       "access": "",
       "best_from": "6-中",
       "best_to": "9-上",
-      "tags": ["瀑布"]
+      "tags": [
+        "瀑布"
+      ]
     },
     {
       "id": "fukan-jinhua-rescue",
@@ -31,6 +33,21 @@
       "access": "",
       "verified_at": "2026-09-06",
       "tags": []
+    },
+    {
+      "id": "biye-tree",
+      "name": "比耶树",
+      "kind": "打卡点",
+      "region": "婺城区",
+      "lon": 119.631886,
+      "lat": 29.097858,
+      "coord_src": "Google Earth 手标（WGS-84）",
+      "coord_acc_m": 50,
+      "intro": "树枝朝两边平平伸开，像举着手在比耶。2026 年 9 月意外走红，成了金华城里一个打卡点。",
+      "access": "",
+      "tags": [
+        "打卡点"
+      ]
     }
   ]
 }
