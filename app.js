@@ -447,6 +447,28 @@ function filtered() {
   return list;
 }
 
+/* 搜索也能搜到点位（2026-09 用户提的）。三条界线，写在这儿免得日后糊涂：
+
+   1. **只认搜索框里的关键词**，不认区域/难度/距离那几个 chip —— 那几把尺子是量路线的
+      （里程、爬升），点位没有这些，硬套只会得出莫名其妙的结果。
+   2. **「点位」那个开关关着时不出结果**。开关是显式的，关了就是「不看点位」，
+      搜索结果不该比地图多出用户明说不想看的东西（点开一个地图上根本没画出来的点，更怪）。
+   3. **没输关键词就不列点位**。这个列表的本义是「路线列表」，点位是搜出来的，不是铺出来的 ——
+      六十条路线底下再挂三个点，那个「60 / 60 条路线」的头也就没法读了。 */
+function spotMatches(s, q) {
+  return [s.name, s.kind, s.region, s.intro, (s.tags || []).join(' ')]
+    .join(' ').toLowerCase().includes(q);
+}
+
+function querySpots() {
+  const q = (state.q || '').trim().toLowerCase();
+  return q ? spots.filter(s => spotMatches(s, q)) : [];
+}
+
+function spotHits() {
+  return state.spotsOn ? querySpots() : [];
+}
+
 function boundsOf(r) {
   const b = new maplibregl.LngLatBounds();
   r.geometry.coordinates.forEach(c => b.extend([c[0], c[1]]));
@@ -461,17 +483,30 @@ function boundsOf(r) {
    而 setData 是异步进 worker 的，刚设完就读会得到 0，会误判成「看不见」。
    isMoving() 那道 guard 是防跟镜头动画抢：select() 里 fitBounds 带动画，
    动画途中 getBounds() 返回的是中途状态，不拦的话会误判。 */
-function ensureVisible(list) {
-  if (!map || !list.length || map.isMoving()) return;
+function ensureVisible(list, hits) {
+  const sp = hits || [];
+  if (!map || map.isMoving()) return;
+  if (!list.length && !sp.length) return;
   const v = map.getBounds();
   const w = v.getWest(), e = v.getEast(), s = v.getSouth(), n = v.getNorth();
   for (const r of list) {
     const b = boundsOf(r);
     if (!(b.getEast() < w || b.getWest() > e || b.getNorth() < s || b.getSouth() > n)) return;
   }
+  // 点位也算「看得见的结果」：搜索只命中点位时（比如「比耶」），别抢镜头
+  for (const p of sp) {
+    if (p.lon >= w && p.lon <= e && p.lat >= s && p.lat <= n) return;
+  }
+  // 有路线就按路线摆（跟以前一样）；只剩点位时才把镜头给点位。
+  // 点位是一个个孤点，maxZoom 卡在 14 —— 跟 fitToSpot 一个尺度，别一路顶到最大。
   const all = new maplibregl.LngLatBounds();
-  list.forEach(r => all.extend(boundsOf(r)));
-  map.fitBounds(all, { padding: fitPadding(), duration: 700 });
+  if (list.length) {
+    list.forEach(r => all.extend(boundsOf(r)));
+    map.fitBounds(all, { padding: fitPadding(), duration: 700 });
+  } else {
+    sp.forEach(p => all.extend([p.lon, p.lat]));
+    map.fitBounds(all, { padding: fitPadding(), maxZoom: 14, duration: 700 });
+  }
 }
 
 // 平移目标区域时给顶部筛选条和右侧/底部面板让位，别把结果藏到面板底下
@@ -548,6 +583,7 @@ document.getElementById('btn-collapse').onclick = () => {
 
 function refresh() {
   const list = filtered();
+  const hits = spotHits();
 
   if (map) {
     map.getSource('routes').setData({
@@ -602,9 +638,10 @@ function refresh() {
     });
   }
 
-  renderList(list);
+  renderList(list, hits);
   document.getElementById('cnt-hit').textContent = list.length;
-  document.getElementById('cnt-all').textContent = '/ ' + routes.length + ' 条路线';
+  document.getElementById('cnt-all').textContent = '/ ' + routes.length + ' 条路线'
+    + (hits.length ? ' · ' + hits.length + ' 个点位' : '');
 
   // 数据集里出现新区域时 chip 要跟着重建，否则新区域没法筛
   const sig = uniq('region').sort().join('|');
@@ -617,27 +654,18 @@ function refresh() {
   document.getElementById('filter-count').textContent = nAct ? String(nAct) : '';
 
   // 结果被筛到视野外了才补镜头（视野里已经有结果就不动，见 ensureVisible）
-  ensureVisible(list);
+  ensureVisible(list, hits);
 }
 
 /* --------------------------- 列表卡片 --------------------------- */
-function renderList(list) {
-  const box = document.getElementById('list');
-  if (!list.length) {
-    box.innerHTML = `<div class="empty">
-           没有匹配的路线。<br><br>
-           当前数据集共 <b>${routes.length}</b> 条，全部来自两步路用户上传的轨迹。
-         </div>`;
-    return;
-  }
-  box.innerHTML = list.map(r => {
-    const tags = [];
-    if (r.family === true) tags.push(`<span class="tag t-family">亲子可走</span>`);
-    if (r.has_water === true) tags.push(`<span class="tag t-water">涉水 / 瀑布</span>`);
-    const nAnno = r.anno_count != null ? r.anno_count : (r.annotations || []).length;
-    if (nAnno) tags.push(`<span class="tag t-anno">${nAnno} 个标注点</span>`);
-    if (r.imported) tags.push(`<span class="tag">刚导入</span>`);
-    return `<div class="card ${state.selected === r.id ? 'on' : ''}" data-id="${r.id}">
+function routeCardHTML(r) {
+  const tags = [];
+  if (r.family === true) tags.push(`<span class="tag t-family">亲子可走</span>`);
+  if (r.has_water === true) tags.push(`<span class="tag t-water">涉水 / 瀑布</span>`);
+  const nAnno = r.anno_count != null ? r.anno_count : (r.annotations || []).length;
+  if (nAnno) tags.push(`<span class="tag t-anno">${nAnno} 个标注点</span>`);
+  if (r.imported) tags.push(`<span class="tag">刚导入</span>`);
+  return `<div class="card ${state.selected === r.id ? 'on' : ''}" data-id="${r.id}">
       <h3>${esc(r.name)}<span class="badge ${r.difficulty}">${r.difficulty}</span></h3>
       <div class="meta">
         <span><b>${r.distance_km}</b> km</span>
@@ -647,9 +675,58 @@ function renderList(list) {
       </div>
       <div class="tags">${tags.join('')}</div>
     </div>`;
-  }).join('');
-  box.querySelectorAll('.card').forEach(el => {
+}
+
+/* 点位卡片。那颗小圆点跟地图上那颗同色（KIND_COLOR），一眼对得上；
+   类目名也做成徽章 —— 点位没有难度，「难度」那个位置留给类目。 */
+function spotCardHTML(s) {
+  const c = KIND_COLOR[s.kind] || KIND_COLOR['其他'];
+  const tags = [];
+  const np = (s.photos || []).length;
+  if (np) tags.push(`<span class="tag">${np} 张图</span>`);
+  const season = seasonText(s);
+  if (season) tags.push(`<span class="tag t-season">${esc(season)}</span>`);
+  return `<div class="card spot ${state.spotSel === s.id ? 'on' : ''}" data-spot="${esc(s.id)}">
+      <h3><i class="kdot" style="background:${c}"></i>${esc(s.name)}<span class="badge" style="background:${c}">${esc(s.kind)}</span></h3>
+      <div class="meta">
+        <span>${esc(s.region || '区域未知')}</span>
+        <span>本站实地打点</span>
+      </div>
+      <div class="tags">${tags.join('')}</div>
+    </div>`;
+}
+
+/* 关键词能搜到点位、但「点位」开关关着时，说一声 —— 否则「搜了没反应」查不出原因 */
+function spotHiddenHint() {
+  const n = querySpots().length;
+  if (!n || state.spotsOn) return '';
+  return `<br><br>点位里有 <b>${n}</b> 个匹配「${esc((state.q || '').trim())}」，
+    但右上角的「点位」开关关着。`;
+}
+
+function renderList(list, hits) {
+  const box = document.getElementById('list');
+  const sp = hits || [];
+  const out = [];
+  if (sp.length) {
+    out.push(`<div class="sec-label">点位<span class="n">${sp.length}</span></div>`);
+    out.push(...sp.map(spotCardHTML));
+  }
+  if (list.length) {
+    // 两段都出现时给路线也加个标签，否则「上面三个点、下面六十条线」看着没头没脑
+    if (sp.length) out.push(`<div class="sec-label">路线<span class="n">${list.length}</span></div>`);
+    out.push(...list.map(routeCardHTML));
+  } else {
+    out.push(`<div class="empty">没有匹配的路线。${sp.length ? ''
+      : `<br><br>当前数据集共 <b>${routes.length}</b> 条，全部来自两步路用户上传的轨迹。`
+        + spotHiddenHint()}</div>`);
+  }
+  box.innerHTML = out.join('');
+  box.querySelectorAll('.card[data-id]').forEach(el => {
     el.onclick = () => select(el.dataset.id);
+  });
+  box.querySelectorAll('.card[data-spot]').forEach(el => {
+    el.onclick = () => selectSpot(el.dataset.spot);
   });
 }
 
