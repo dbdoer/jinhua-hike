@@ -1,6 +1,9 @@
 # 截图等自测产物
 shots/
 
+# 待处理的原图收件箱（spots/photos/ 里才是站上用的产物，这里只是中转）
+spots/inbox/
+
 # check_dupes.py 写出的扫描明细
 data/_scan.json
 
