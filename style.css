@@ -154,9 +154,13 @@ button.primary:hover{background:#047857}
 .kv span:last-child{color:var(--ink);text-align:right;word-break:break-all}
 
 /* ---------- 点位详情 ---------- */
-/* 图按宽 1200、WebP、200 KB 上下入库；这里再挂 loading=lazy，别让列表把图都拉下来 */
-.shot{margin:0 0 13px}
-.shot img{width:100%;border-radius:10px;display:block;background:#f1f5f9;min-height:60px}
+/* 图按宽 1200、WebP、200 KB 上下入库；这里再挂 loading=lazy，别让列表把图都拉下来。
+   figure 收成「跟图同宽」（width:fit-content）再居中：竖图缩窄之后，下面那行署名
+   会自动贴到图的左右边缘，不会出现「图居中、字左对齐」两套基准线。
+   横幅图照样撑满面板宽度，跟以前一样。 */
+.shot{margin:0 auto 13px;width:fit-content;max-width:100%}
+.shot img{display:block;margin:0 auto;width:auto;max-width:100%;max-height:46vh;
+  height:auto;border-radius:10px;background:#f1f5f9;min-height:60px}
 .shot figcaption{font-size:11.5px;color:var(--ink2);margin-top:5px;display:flex;
   justify-content:space-between;gap:8px;align-items:baseline}
 .shot figcaption .date{color:var(--ink3);white-space:nowrap}
@@ -233,5 +237,8 @@ button.primary:hover{background:#047857}
   #panel.collapsed .panel-foot{display:none}
   #panel.collapsed .panel-head{border-bottom:none}
   .collapse-toggle{display:inline-flex}
+  /* 照片高度上限在窄屏要再收一档：面板本身只占屏幕 36.5vh（46% of 844），
+     沿用宽屏那个 46vh 等于让一张图占掉一个多面板。收窄的图会自己居中，整张还在。 */
+  .shot img{max-height:34vh}
   .legend{display:none}
 }

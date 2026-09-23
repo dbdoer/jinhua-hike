@@ -11,6 +11,10 @@ README 第 2 步写着「图片压成 WebP、宽 1200，丢进 spots/photos/」�
 - **丢掉全部 EXIF（含 GPS）**。手机原图里带着拍摄地坐标，而站点本身
   已经公开点位，再把每次拍摄的精确坐标一起发出去，没有任何意义。
 - **宽度只缩不放**。源图比 1200 窄就原样保留，别把小图拉大。
+- **右下角打一枚水印**（`ijinhua.com`）。图一旦离开这个站就没头没尾了，
+  别人存下来再转发，谁也认不出是哪来的。水印画在**缩完尺寸之后**，
+  字号跟着最终宽度走；用一层半透明 RGBA 叠上去，带一道暗影，
+  浅底深底都看得见，又不像牛皮癣。不想要就 `--no-watermark`。
 
 注意：这是本仓库 tools/ 里**唯一**一个非标准库依赖（Pillow）。
 它不进构建流水线，只在人加新点时手动跑一次：
@@ -53,6 +57,57 @@ def rel(p):
 SRC_EXT = (".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff")
 HEIC_EXT = (".heic", ".heif")
 QUALITY_LADDER = (82, 78, 74, 70, 66, 62, 58, 54, 50, 45)
+# 水印文字与字号。字号 = 图宽的 2.6%（1200 宽 -> 31px），下限 14px：
+# 图再小也得看得清，不然水印就成了一条灰线。
+WATERMARK = "ijinhua.com"
+WM_SIZE_RATIO = 0.026
+WM_SIZE_MIN = 14
+WM_MARGIN_RATIO = 0.018
+# 字体按平台找一遍。水印是 ASCII，等宽/无衬线都行，但要用粗体 —— 细体压在
+# 亮天空上基本看不见。找不到就退到 Pillow 自带的可缩放默认字体，不报错。
+FONT_CANDIDATES = (
+    "C:/Windows/Fonts/arialbd.ttf", "C:/Windows/Fonts/arial.ttf",
+    "C:/Windows/Fonts/segoeuib.ttf", "C:/Windows/Fonts/msyhbd.ttc",
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+    "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
+)
+
+
+def load_font(px):
+    from PIL import ImageFont
+    for p in FONT_CANDIDATES:
+        if os.path.exists(p):
+            try:
+                return ImageFont.truetype(p, px)
+            except Exception:  # noqa: BLE001  字体文件坏了/格式不认，试下一个
+                continue
+    try:
+        return ImageFont.load_default(size=px)   # Pillow 10.1+ 的默认字体也能给字号
+    except TypeError:
+        return ImageFont.load_default()
+
+
+def add_watermark(im, text=WATERMARK):
+    """右下角一枚半透明水印。必须在缩完尺寸之后调用 —— 字号按最终宽度算。
+
+    两层：先画一道暗影（偏右下 1px），再叠白字。这样压在亮天空或暗树干上都认得出。
+    """
+    from PIL import ImageDraw
+    w, h = im.size
+    px = max(WM_SIZE_MIN, round(w * WM_SIZE_RATIO))
+    font = load_font(px)
+    margin = max(6, round(w * WM_MARGIN_RATIO))
+
+    layer = Image.new("RGBA", im.size, (0, 0, 0, 0))
+    d = ImageDraw.Draw(layer)
+    box = d.textbbox((0, 0), text, font=font)
+    tw, th = box[2] - box[0], box[3] - box[1]
+    x, y = w - margin - tw, h - margin - th - box[1]
+
+    off = max(1, round(px * 0.06))
+    d.text((x + off, y + off), text, font=font, fill=(0, 0, 0, 110))
+    d.text((x, y), text, font=font, fill=(255, 255, 255, 205))
+    return Image.alpha_composite(im.convert("RGBA"), layer).convert("RGB")
 
 
 def ascii_slug(s):
@@ -101,6 +156,8 @@ def main():
     ap.add_argument("--max-width", type=int, default=1200)
     ap.add_argument("--max-kb", type=int, default=400)
     ap.add_argument("--force", action="store_true", help="覆盖已存在的产物")
+    ap.add_argument("--no-watermark", action="store_true", help="不打右下角那枚水印")
+    ap.add_argument("--watermark-text", default=WATERMARK, help="水印文字（默认 %s）" % WATERMARK)
     args = ap.parse_args()
 
     files, heic = collect(args.paths)
@@ -136,6 +193,9 @@ def main():
             if w0 > args.max_width:
                 h1 = round(h0 * args.max_width / w0)
                 im = im.resize((args.max_width, h1), Image.LANCZOS)
+            # 水印在缩完之后打：字号按最终宽度算，不然大图缩下来水印会偏大
+            if not args.no_watermark:
+                im = add_watermark(im, args.watermark_text)
             q, size = encode(im, dst, args.max_kb)
             flag = "" if size <= args.max_kb * 1024 else "  ← 仍超过 %d KB" % args.max_kb
             print("  %-22s %-14s %-9s q=%d%s" % (
