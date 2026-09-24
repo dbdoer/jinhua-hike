@@ -19,25 +19,15 @@ const JINHUA = {
    源数据在 spots/spots.json（人工维护、坐标手标、机器只校验），
    走 tools/build_spots.py 生成 data/spots.js —— 也用 <script> 加载，file:// 能跑。 */
 /* 类别配色。跟 tools/build_spots.py 的 KINDS 是同一张表的两份抄写 ——
-   加一个类目，两边都得加，不然点会拿到 undefined 的颜色。 */
-const KIND_COLOR = {
-  '水杉': '#c2410c', '银杏': '#ca8a04', '红枫': '#b91c1c', '枫香': '#dc2626',
-  '乌桕': '#7c2d12', '芦花': '#a8a29e', '稻田': '#d97706', '油菜花': '#65a30d',
-  // 瀑布用深青，有意跟「起点」那颗天蓝 (#0284c7) 拉开：两者都是圆点，撞色就分不清了
-  '瀑布': '#0e7490',
-  // 事件点（事故、救援、纪念之类）用玫红：沿途标注的紫 (#7c3aed) 和难度的红 (#b91c1c)
-  // 都占着了，玫红在这张图上还没人用
-  '事件点': '#be185d',
-  // 打卡点（网红树/网红点这类非季节性的去处）用深绿 #15803d：色相 142°，
-  // 落在「油菜花 85°」与「瀑布 193°」之间那个 108° 的空档正中，跟两边各差 50° 以上。
-  // 紫系（沿途标注 #7c3aed）和玫红（事件点）都有人占了，别往那边挤。
-  '打卡点': '#15803d',
-  // 荷花用品红 #c026d3（色相 293°）。挑色是量出来的：把所有圆点类颜色转 HSL 排一遍，
-  // 最大空档是「沿途标注 262° → 事件点 335°」这 73°，293° 正落在它中间，离两边各 31°/42°。
-  // 荷花本色是粉红（约 340°），但那跟事件点的玫红撞成一团 —— 图上认得出比像不像要紧。
-  '荷花': '#c026d3',
-  '其他': '#ea580c',
-};
+   加一个类目，两边都得加，不然图例和卡片上那颗点会退到兜底色。 */
+/* 点位只有一个类目：「打卡点」。2026-09-24 站主把瀑布 / 事件点 / 荷花几个类目全并掉了
+   —— 图例上从此就一种颜色，不再是一排小色块。颜色沿用原来比耶树那颗深绿 #15803d。
+   KIND_COLOR 仍与 tools/build_spots.py 的 KINDS 成对（那边校验、这边上色），
+   将来要再分类目，先按老办法量色相找空档，再把两张表一起加。
+   旧办法留档：把所有圆点类颜色转 HSL 排序，看最大空档、在空档中间选色 —— 当年
+   「打卡点」就是这么挑出来的（色相 142°，落在油菜花 85° 与瀑布 193° 之间那个 108° 空档）。 */
+const SPOT_COLOR = '#15803d';
+const KIND_COLOR = { '打卡点': SPOT_COLOR };
 const spots = ((window.SPOT_DATA || {}).spots || []).slice();
 
 /* 旬的刻度。**必须声明在这里**（文件上方），不能跟 seasonText 那几个函数放在一起：
@@ -634,7 +624,7 @@ function refresh() {
         type: 'Feature', id: s.id,
         properties: {
           id: s.id, name: s.name, kind: s.kind,
-          color: KIND_COLOR[s.kind] || KIND_COLOR['其他'],
+          color: KIND_COLOR[s.kind] || SPOT_COLOR,
           season: seasonText(s),
         },
         geometry: { type: 'Point', coordinates: [s.lon, s.lat] },
@@ -684,7 +674,7 @@ function routeCardHTML(r) {
 /* 点位卡片。那颗小圆点跟地图上那颗同色（KIND_COLOR），一眼对得上；
    类目名也做成徽章 —— 点位没有难度，「难度」那个位置留给类目。 */
 function spotCardHTML(s) {
-  const c = KIND_COLOR[s.kind] || KIND_COLOR['其他'];
+  const c = KIND_COLOR[s.kind] || SPOT_COLOR;
   const tags = [];
   const np = (s.photos || []).length;
   if (np) tags.push(`<span class="tag">${np} 张图</span>`);
@@ -1363,7 +1353,7 @@ const legendSpot = document.getElementById('legend-spot');
 if (legendSpot && spots.length) {
   const kinds = [...new Set(spots.map(s => s.kind))];
   legendSpot.innerHTML = '<span>点位</span>' + kinds.map(k =>
-    `<span class="kind"><i style="background:${KIND_COLOR[k] || KIND_COLOR['其他']}"></i>${esc(k)}</span>`).join('');
+    `<span class="kind"><i style="background:${KIND_COLOR[k] || SPOT_COLOR}"></i>${esc(k)}</span>`).join('');
 }
 
 const spotsChk = document.getElementById('f-spots');

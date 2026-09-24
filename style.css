@@ -190,8 +190,9 @@ button.primary:hover{background:#047857}
 }
 .legend div{display:flex;align-items:center;gap:5px}
 .legend i{width:14px;height:4px;border-radius:2px;display:inline-block}
-.legend i.spot{width:11px;height:11px;border-radius:50%;background:#c2410c;
-  box-shadow:0 0 0 2px #fff,0 0 0 3px #c2410c;margin:0 2px}
+/* JS 还没跑（或者一个点位都没有）时露脸的占位点 —— 颜色跟 app.js 的 SPOT_COLOR 一致 */
+.legend i.spot{width:11px;height:11px;border-radius:50%;background:#15803d;
+  box-shadow:0 0 0 2px #fff,0 0 0 3px #15803d;margin:0 2px}
 /* 图例里的点位类目：数据里有几个类目就列几个，点色跟着 KIND_COLOR 走（app.js 填） */
 .legend #legend-spot .kind{display:flex;align-items:center;gap:4px}
 .legend #legend-spot .kind i{width:10px;height:10px;border-radius:50%;

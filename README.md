@@ -277,7 +277,7 @@ python tools/build_spots.py --check-only  # 只看校验结果
 {
   "id": "shuanglong-shuishan",          // 小写字母/数字/连字符，稳定不改
   "name": "双龙洞外那片水杉",
-  "kind": "水杉",                        // 类别，见 build_spots.py 的 KINDS（树种 / 瀑布 / 其他）
+  "kind": "打卡点",                      // 类目，见 build_spots.py 的 KINDS（目前只有「打卡点」一种）
   "region": "婺城区",
   "lon": 119.62123, "lat": 29.13891,     // WGS-84，手标
   "coord_src": "Google Earth 手标",      // 坐标哪来的，必须写
