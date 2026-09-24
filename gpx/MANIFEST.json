@@ -1,7 +1,7 @@
 {
  "note": "gpx/ 里原始 GPX 文件的字节指纹。任何一项对不上，都意味着「下载原始 GPX」给出去的已经不是上传者导出的那串字节。.gitattributes 里 *.gpx 标了 -text，禁止 git 做行尾转换 —— 别去掉它。用 python tools/check_gpx_manifest.py 校验。",
  "algorithm": "sha256",
- "count": 62,
+ "count": 64,
  "files": [
   {
    "file": "三县第一潭三瀑.gpx",
@@ -151,6 +151,13 @@
    "name": "塔石余仓瀑布260619"
   },
   {
+   "file": "塔石岭边梯田.gpx",
+   "bytes": 24202,
+   "sha256": "51315d7644d799eb924cd130678f4fde7d74280703d9696396b4aa80c76e900b",
+   "track_id": "90059252",
+   "name": "塔石岭边梯田"
+  },
+  {
    "file": "大寒尖羊印环线.gpx",
    "bytes": 180967,
    "sha256": "9ca6b7b64defa675d073868e390e49f97e6a1a0b1248140148ed5d4cfba344b0",
@@ -219,6 +226,13 @@
    "sha256": "3ad64f39d2083542055a4b582cc295d13264731ea44db3c4f830d69591299285",
    "track_id": "85028885",
    "name": "松瀑山260531"
+  },
+  {
+   "file": "武义七驼峰.gpx",
+   "bytes": 152486,
+   "sha256": "bc9bbdc5851968fcbebba44bc95280923a5900037ef123cdd6e5394dcf6bfd7e",
+   "track_id": "90087914",
+   "name": "武义七驼峰"
   },
   {
    "file": "武义清风寨260513.gpx",
