@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "note": "人工维护。坐标手标、带来源与精度；机器只校验，不替你选点。改完跑 python tools/build_spots.py。加点的流程见 README「加一个点的流程」。",
-  "updated": "2026-09-23",
+  "updated": "2026-09-24",
   "spots": [
     {
       "id": "shuimen-pubu",
@@ -52,6 +52,31 @@
         {
           "file": "biye-01.webp",
           "credit": null
+        }
+      ]
+    },
+    {
+      "id": "hehua",
+      "name": "荷花",
+      "kind": "荷花",
+      "region": "婺城区",
+      "lon": 119.664675,
+      "lat": 29.08746,
+      "coord_src": "Google Earth 手标（WGS-84）",
+      "coord_acc_m": 50,
+      "intro": "花开得晚。2026 年 9 月 24 日早上实拍时，节气已过秋分，这一片荷花仍开得正艳。",
+      "access": "",
+      "best_from": "9-下",
+      "best_to": "10-上",
+      "verified_at": "2026-09-24",
+      "tags": [
+        "荷花"
+      ],
+      "photos": [
+        {
+          "file": "hehua-01.webp",
+          "credit": null,
+          "shot_at": "2026-09-24"
         }
       ]
     }

@@ -11,10 +11,12 @@ README 第 2 步写着「图片压成 WebP、宽 1200，丢进 spots/photos/」�
 - **丢掉全部 EXIF（含 GPS）**。手机原图里带着拍摄地坐标，而站点本身
   已经公开点位，再把每次拍摄的精确坐标一起发出去，没有任何意义。
 - **宽度只缩不放**。源图比 1200 窄就原样保留，别把小图拉大。
-- **右下角打一枚水印**（`ijinhua.com`）。图一旦离开这个站就没头没尾了，
+- **画面中部偏下打一枚水印**（`ijinhua.com`）。图一旦离开这个站就没头没尾了，
   别人存下来再转发，谁也认不出是哪来的。水印画在**缩完尺寸之后**，
   字号跟着最终宽度走；用一层半透明 RGBA 叠上去，带一道暗影，
   浅底深底都看得见，又不像牛皮癣。不想要就 `--no-watermark`。
+  位置：水平居中、文字中心落在**距底边 1/4 图高**处（= 图高的 3/4）。
+  原先打在右下角，2026-09-24 按站主要求挪到这里 —— 改位置就改 `WM_Y_RATIO`。
 
 注意：这是本仓库 tools/ 里**唯一**一个非标准库依赖（Pillow）。
 它不进构建流水线，只在人加新点时手动跑一次：
@@ -62,7 +64,9 @@ QUALITY_LADDER = (82, 78, 74, 70, 66, 62, 58, 54, 50, 45)
 WATERMARK = "ijinhua.com"
 WM_SIZE_RATIO = 0.026
 WM_SIZE_MIN = 14
-WM_MARGIN_RATIO = 0.018
+# 水印的竖直位置：文字**中心**落在距底边 1/4 图高处（= 图高的 3/4），水平居中。
+# 原先贴右下角、用 WM_MARGIN_RATIO 算边距；挪到画面中间之后，边距就没用了。
+WM_Y_RATIO = 0.75
 # 字体按平台找一遍。水印是 ASCII，等宽/无衬线都行，但要用粗体 —— 细体压在
 # 亮天空上基本看不见。找不到就退到 Pillow 自带的可缩放默认字体，不报错。
 FONT_CANDIDATES = (
@@ -88,21 +92,22 @@ def load_font(px):
 
 
 def add_watermark(im, text=WATERMARK):
-    """右下角一枚半透明水印。必须在缩完尺寸之后调用 —— 字号按最终宽度算。
+    """画面中部偏下的一枚半透明水印。必须在缩完尺寸之后调用 —— 字号按最终宽度算。
 
+    位置：水平居中，文字**中心**落在距底边 1/4 图高处（= 图高的 3/4）。原先贴右下角。
     两层：先画一道暗影（偏右下 1px），再叠白字。这样压在亮天空或暗树干上都认得出。
     """
     from PIL import ImageDraw
     w, h = im.size
     px = max(WM_SIZE_MIN, round(w * WM_SIZE_RATIO))
     font = load_font(px)
-    margin = max(6, round(w * WM_MARGIN_RATIO))
 
     layer = Image.new("RGBA", im.size, (0, 0, 0, 0))
     d = ImageDraw.Draw(layer)
     box = d.textbbox((0, 0), text, font=font)
     tw, th = box[2] - box[0], box[3] - box[1]
-    x, y = w - margin - tw, h - margin - th - box[1]
+    x = round(w / 2 - tw / 2 - box[0])
+    y = round(h * WM_Y_RATIO - th / 2 - box[1])
 
     off = max(1, round(px * 0.06))
     d.text((x + off, y + off), text, font=font, fill=(0, 0, 0, 110))
@@ -156,7 +161,7 @@ def main():
     ap.add_argument("--max-width", type=int, default=1200)
     ap.add_argument("--max-kb", type=int, default=400)
     ap.add_argument("--force", action="store_true", help="覆盖已存在的产物")
-    ap.add_argument("--no-watermark", action="store_true", help="不打右下角那枚水印")
+    ap.add_argument("--no-watermark", action="store_true", help="不打画面中部那枚水印")
     ap.add_argument("--watermark-text", default=WATERMARK, help="水印文字（默认 %s）" % WATERMARK)
     args = ap.parse_args()
 

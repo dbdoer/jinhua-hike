@@ -37,6 +37,41 @@
   },
   {
    "type": "Feature",
+   "id": "hehua",
+   "properties": {
+    "id": "hehua",
+    "name": "荷花",
+    "kind": "荷花",
+    "region": "婺城区",
+    "lon": 119.664675,
+    "lat": 29.08746,
+    "coord_src": "Google Earth 手标（WGS-84）",
+    "coord_acc_m": 50,
+    "intro": "花开得晚。2026 年 9 月 24 日早上实拍时，节气已过秋分，这一片荷花仍开得正艳。",
+    "access": "",
+    "best_from": "9-下",
+    "best_to": "10-上",
+    "verified_at": "2026-09-24",
+    "tags": [
+     "荷花"
+    ],
+    "nav_gcj": {
+     "lon": 119.669405,
+     "lat": 29.084522
+    },
+    "best_i_from": 26,
+    "best_i_to": 27
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     119.664675,
+     29.08746
+    ]
+   }
+  },
+  {
+   "type": "Feature",
    "id": "fukan-jinhua-rescue",
    "properties": {
     "id": "fukan-jinhua-rescue",
