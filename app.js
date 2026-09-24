@@ -126,7 +126,7 @@ function shareTitle() {
   }
   if (state.spotSel) {
     const s = spots.find(x => x.id === state.spotSel);
-    if (s) return s.name + '（' + s.kind + ' · ' + s.region + '）· 金华点位';
+    if (s) return s.name + '（' + s.region + '）· 金华点位';
   }
   return '金华徒步路线';
 }
