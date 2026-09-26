@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>金华打卡地图</title>
+<meta name="description" content="金华本地实地点位地图：瀑布、秋色、打卡点，每个点的坐标来源与精度都写在详情里。">
+<!-- 分享卡片。这是第二个入口页的另一个用处：/spots/ 是一条**真实存在的路径**，
+     微信爬虫拿到的是 200 而不是首页，所以卡片能一页一个样 —— 首页那个
+     hash 深链做不到这件事（hash 不发给服务器）。
+     og:image 暂时没填：站上还没有内容图。等有实拍/自动生成的轨迹图再加。 -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="金华打卡地图">
+<meta property="og:description" content="金华本地实地点位地图：瀑布、秋色、打卡点，每个点的坐标来源与精度都写在详情里。">
+<meta property="og:url" content="https://ijinhua.com/spots/">
+<!-- 站点图标。路径全带 ../ —— 这一页在子目录里，漏一个就是 404。 -->
+<link rel="icon" href="../favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<meta name="theme-color" content="#15803d">
+<script>
+window.__fallbackMapCss = function () {
+  var l = document.createElement('link');
+  l.rel = 'stylesheet'; l.href = '../vendor/maplibre-gl.css';
+  document.head.appendChild(l);
+};
+window.__fallbackMapLib = function () {
+  var s = document.createElement('script');
+  s.src = '../vendor/maplibre-gl.js';
+  s.onload = function () { window.__initMap && window.__initMap(); };
+  document.head.appendChild(s);
+};
+</script>
+<link rel="preload" as="style"
+      href="https://cdn.staticfile.org/maplibre-gl/5.6.0/maplibre-gl.min.css"
+      onload="this.onload=null;this.rel='stylesheet'"
+      onerror="window.__fallbackMapCss()">
+<link rel="stylesheet" href="../style.css">
+<link rel="preconnect" href="https://cdn.staticfile.org">
+<link rel="preconnect" href="https://tiles.openfreemap.org" crossorigin>
+<link rel="dns-prefetch" href="https://tiles.openfreemap.org">
+<link rel="dns-prefetch" href="https://tile.opentopomap.org">
+<link rel="dns-prefetch" href="https://server.arcgisonline.com">
+<link rel="dns-prefetch" href="https://hm.baidu.com">
+
+<!-- 百度统计：与首页同一套（延迟注入，不抢首屏带宽）。统计能分辨入口页，
+     所以从后台能看出两个主题各来了多少人。 -->
+<script>
+window._hmt = window._hmt || [];
+(function () {
+  var HMT_SRC = 'https://hm.baidu.com/hm.js?43c11e72955fe0c3db679ca40c371952';
+  var injected = false;
+  function inject() {
+    if (injected) return;
+    injected = true;
+    var hm = document.createElement('script');
+    hm.src = HMT_SRC;
+    hm.async = true;
+    document.head.appendChild(hm);
+  }
+  window.__hmtInject = inject;
+  if (window.addEventListener) {
+    window.addEventListener('load', function () {
+      if ('requestIdleCallback' in window) requestIdleCallback(inject, { timeout: 2000 });
+      else setTimeout(inject, 200);
+    });
+  } else {
+    setTimeout(inject, 3000);
+  }
+})();
+</script>
+</head>
+
+<!-- body 上的 theme-spots 是**唯一**的主题声明，app.js 只读它、不猜。
+     换主题的能力就这一处，别在这儿之外再加第二套判断。 -->
+<body class="theme-spots">
+
+<div id="map"></div>
+
+<header class="bar" id="bar">
+  <div class="brand">
+    <span class="dot"></span>
+    <b><span class="only-wide">金华打卡地图</span><span class="only-narrow">打卡地图</span></b>
+    <span class="sub">本站实地打点</span>
+  </div>
+
+  <button id="btn-filter-toggle" class="filter-toggle" aria-expanded="false" aria-controls="filters">
+    <span class="lbl-closed">搜索</span><span class="lbl-open">收起</span><span class="n" id="filter-count"></span><span class="caret">▾</span>
+  </button>
+
+  <!-- 只留搜索。区域 / 难度 / 距离 / 亲子 / 涉水 / 排序全是量路线的尺子，
+       点位没有里程和爬升，硬套只会得出莫名其妙的结果（理由同 spotMatches 那段注释）。
+       元素留着但 hidden，JS 那几处 querySelectorAll 因此不用加守卫。 -->
+  <div class="filters" id="filters">
+    <div class="fg adv" id="fg-region" hidden>
+      <label>区域</label>
+      <div class="chips" data-group="region"></div>
+    </div>
+
+    <div class="fg adv" id="fg-diff" hidden>
+      <label>难度</label>
+      <div class="chips" data-group="difficulty"></div>
+    </div>
+
+    <div class="fg adv" hidden>
+      <label>距离</label>
+      <select id="f-dist">
+        <option value="all">全部</option>
+      </select>
+    </div>
+
+    <div class="fg toggles adv" hidden>
+      <label class="tg"><input type="checkbox" id="f-family"><span>亲子</span></label>
+      <label class="tg"><input type="checkbox" id="f-water"><span>涉水 / 瀑布</span></label>
+      <label class="tg"><input type="checkbox" id="f-wpt" checked><span>沿途标注点</span></label>
+    </div>
+
+    <div class="fg grow">
+      <label>搜索</label>
+      <input id="f-q" type="search" placeholder="点位名 / 类目 / 区域，如：瀑布、银杏">
+    </div>
+
+    <div class="fg adv" hidden>
+      <label>排序</label>
+      <select id="f-sort"><option value="name">名称</option></select>
+    </div>
+
+    <button id="btn-reset" class="ghost adv" hidden>重置</button>
+  </div>
+
+  <div class="map-tools" id="map-tools">
+    <!-- 入口页互跳。放在右上角这组控件里，而不是挤在品牌名旁边 —— 品牌名那行
+         窄屏已经很紧，再塞东西就得换行、把筛选条顶下去。 -->
+    <a class="themeswitch" href="../">徒步路线 →</a>
+    <div class="base-switch" id="base-switch">
+      <button data-base="liberty" class="on">简洁</button>
+      <button data-base="topo">地形等高线</button>
+      <button data-base="sat">卫星</button>
+    </div>
+  </div>
+</header>
+
+<aside id="panel">
+  <div class="panel-head">
+    <button id="btn-back" class="back" hidden>‹ 返回列表</button>
+    <div class="cnt"><b id="cnt-hit">0</b><span id="cnt-all">/ 0 个点位</span></div>
+    <button id="btn-collapse" class="collapse-toggle" aria-expanded="true" title="收起面板">收起</button>
+  </div>
+  <div id="list" class="list"></div>
+  <div id="detail" class="detail" hidden></div>
+
+  <!-- 撤下通道。点位是本站自己打的，但这条通道**不留白** ——
+       将来若合入别人的点位或照片，出口得先在。 -->
+  <footer class="panel-foot">
+    点位为本站实地打点 · 有异议或要撤下请邮件
+    <a href="mailto:ijinhua2026@163.com?subject=%E9%87%91%E5%8D%8E%E6%89%93%E5%8D%A1%E5%9C%B0%E5%9B%BE%EF%BC%9A%E7%82%B9%E4%BD%8D%E9%97%AE%E9%A2%98">ijinhua2026@163.com</a>
+  </footer>
+</aside>
+
+<!-- 图例只留点位一行（路线那几行是难度/起点/标注，这一页不存在那些东西）。
+     类目名和颜色由 app.js 按数据里的 kind 填。 -->
+<div class="legend">
+  <div id="legend-spot"><i class="spot"></i>点位</div>
+  <div class="disc">点位坐标由站主实地手标，来源与精度写在每个点的详情里</div>
+</div>
+
+<div id="toast" class="toast" hidden></div>
+
+<div id="copybox" class="copybox" hidden>
+  <div class="hd">链接已选好，按 Ctrl/⌘ + C 复制</div>
+  <input id="copybox-input" readonly spellcheck="false">
+  <button type="button" onclick="hideCopyBox()">关闭</button>
+</div>
+
+<!-- 只加载点位数据 + 逻辑。
+     **routes.index.js（元数据 ~10KB gzip）和 routes.geom.js（几何 ~115KB）都不加载** ——
+     这一页没有路线，一字节都不该花在这上面。app.js 里 `routes` 本来就是
+     `((window.HIKE_INDEX || {}).routes || [])`，缺了它自然退化成空数组；
+     geomReady 那边则由 IS_SPOTS 直接放行（见 app.js 的注释）。 -->
+<script src="../data/spots.js"></script>
+<script src="../app.js"></script>
+<script async src="https://cdn.staticfile.org/maplibre-gl/5.6.0/maplibre-gl.min.js"
+        onload="window.__initMap && window.__initMap()"
+        onerror="window.__fallbackMapLib()"></script>
+</body>
+</html>

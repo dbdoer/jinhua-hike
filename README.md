@@ -36,13 +36,14 @@ jinhua-hike/
 ├── data/               构建产物，由 tools/ 下的脚本生成
 │   ├── routes.json     完整数据（含 geometry / annotations）
 │   ├── routes.geojson  标准 GeoJSON，供外部工具吃
-│   ├── routes.index.js 列表元数据（window.HIKE_INDEX，~20KB，首屏就要）
-│   ├── routes.geom.js  几何 + 标注点（window.HIKE_GEOM，~130KB，可晚一步到）
+│   ├── routes.index.js 列表元数据（window.HIKE_INDEX，64KB / gzip 10KB，首屏就要）
+│   ├── routes.geom.js  几何 + 标注点（window.HIKE_GEOM，493KB / gzip 133KB，可晚一步到）
 │   ├── spots.js        点位（window.SPOT_DATA，量级小，跟元数据一起上）
 │   └── spots.geojson   点位的标准 GeoJSON
 ├── gpx/                两步路导出的原始 GPX + MANIFEST.json（字节指纹）
-├── spots/              点位：人工打点的源数据（照 gpx/ 的地位，源在库里、产物在 data/）
-│   ├── spots.json      一个点一条，坐标手标
+├── spots/              打卡点：入口页 + 点位源数据（两个身份凑在一处，见「两个入口页」）
+│   ├── index.html      入口页（线上是 /spots/，body 上挂 theme-spots）
+│   ├── spots.json      一个点一条，坐标手标（照 gpx/ 的地位：源在库里、产物在 data/）
 │   └── photos/         自己拍的照片（WebP，宽 1200）
 ├── tools/              构建与自查脚本（Python 3；只有 prep_photos.py 用到 Pillow）
 │   ├── build_routes.py
@@ -56,6 +57,50 @@ jinhua-hike/
 │   └── icons/          图标的两个尺寸变体源码（见下节）
 └── shots/              自测截图（不进版本库）
 ```
+
+## 两个入口页（主题）
+
+一个仓、一套壳、多个入口页。**没有框架，也没有第二份逻辑** —— 主题就是 `<body>` 上
+一个 class，`app.js` 只读它、不猜：
+
+```js
+const THEME = document.body.classList.contains('theme-spots') ? 'spots' : 'hike';
+```
+
+让 HTML 自己说话，是因为静态站没有服务端路由。这样也不会出现「某处漏改就错主题」。
+
+| 入口 | 路径 | 主题 | 页面上有什么 |
+|---|---|---|---|
+| 徒步路线 | `/` | 无 class（默认） | 64 条两步路轨迹 + 点位开关 + 全套筛选 |
+| 打卡点 | `/spots/` | `theme-spots` | 只有点位，一条路线也不放 |
+
+`/spots/` 与首页的差别只有三处：
+
+1. **HTML** —— 自己的 `<title>` / `description` / og 标签、自己的品牌名；藏掉只对路线
+   有意义的控件（区域 / 难度 / 距离 / 亲子涉水 / 排序 / 重置 / 点位开关）；图例只留
+   点位那一行；脚本**只加载 `data/spots.js`**，`routes.index.js`（gzip 10KB）和
+   `routes.geom.js`（gzip 133KB）一字节都不加载。缺了它们不会崩 —— `routes` 本来就是
+   `((window.HIKE_INDEX || {}).routes || [])`，没有就退化成空数组。
+2. **app.js 里的分支（共 6 处，都以 `IS_SPOTS` 开头）** —— `filtered()` 返回空、
+   `spotHits()` 铺出全部点位（搜索框仍能筛）、计数文案、`renderList` 的空态、
+   `geomReady` 放行、开场镜头 `fitAllSpots()`。最后那个是**必须**的：
+   `geomReady` 初值看 `window.HIKE_GEOM` 在不在，这一页不加载几何，不特判就永远
+   等不到，`bootMap()` 卡在门口、地图根本建不起来。
+3. **CSS** —— 只多了一条 `.themeswitch`，就是两个入口之间互跳的那个链接。
+
+### `/spots/` 为什么是一条真路径，而不是 hash 深链
+
+微信爬链接时**不发送 hash**。`/#spot=xxx` 在它眼里就是首页，62 个点爬出一个样，
+分享卡片也就只能一个样。`/spots/#spot=xxx` 是真实存在的目录，爬虫拿到 200，
+卡片才有得改；将来一个点一个 `<title>`，搜索引擎也才收得到。
+
+一条链接两种读法：**爬虫看路径**（拿 `/spots/` 的 meta），**人看 hash**（落在那一个点上）。
+
+### 别急着抽主题框架
+
+**两个例子抽不出共性。** 等玩水 / 赏秋真做出来再回头看哪儿该抽象 —— 它们跟打卡点
+共用 `spots/` 这份源数据，入口页各自的目录另开。（`/spots/` 既是入口页又是源数据
+目录只是命名撞车，别把 `spots.json` 挪走。）
 
 ## 站点图标怎么来的
 

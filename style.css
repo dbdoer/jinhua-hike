@@ -57,6 +57,14 @@ button.primary:hover{background:#047857}
 .base-switch button.on{background:var(--ink);color:#fff}
 .base-switch button:disabled{opacity:.38;cursor:not-allowed}
 
+/* 入口页互跳（徒步页 / 打卡点页各带一个指向对方的链接）。
+   照 .base-switch 的样子描，但它是**跳转**不是开关 —— 所以没有选中的反白态，
+   悬停才反白。 */
+.themeswitch{display:inline-flex;align-items:center;padding:5px 11px;font-size:12px;
+  border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink2);
+  text-decoration:none;white-space:nowrap}
+.themeswitch:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
+
 /* 窄屏折叠按钮：宽屏不出现（样式在下面的 media query 里打开）
    展开后按钮改口叫「收起」。原先一直写「筛选」，等于没告诉用户点这儿能收回去。
    底色也从纯白改成浅灰，好和白色横条拉开、看得出是个按钮。 */

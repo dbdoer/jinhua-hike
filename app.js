@@ -7,6 +7,14 @@
    ========================================================================= */
 'use strict';
 
+/* 主题：一个仓、一套壳、多个入口页。
+   入口页在自己的 <body> 上挂一个 class 声明身份，这里**只读不猜** —— 静态站没有
+   服务端路由，让 HTML 自己说话最省事，也不会某处漏改就错主题。
+   目前两个：hike（首页 /，徒步路线）、spots（/spots/，打卡点）。
+   只抽到「够用」为止：两个例子抽不出共性，别急着包成主题框架。 */
+const THEME = document.body.classList.contains('theme-spots') ? 'spots' : 'hike';
+const IS_SPOTS = THEME === 'spots';
+
 const DIFF_COLOR = { '休闲': '#059669', '中等': '#d97706', '困难': '#b91c1c' };
 const JINHUA = {
   center: [119.72, 29.13],
@@ -126,9 +134,9 @@ function shareTitle() {
   }
   if (state.spotSel) {
     const s = spots.find(x => x.id === state.spotSel);
-    if (s) return s.name + '（' + s.region + '）· 金华点位';
+    if (s) return s.name + '（' + s.region + '）· ' + (IS_SPOTS ? '金华打卡地图' : '金华点位');
   }
-  return '金华徒步路线';
+  return IS_SPOTS ? '金华打卡地图' : '金华徒步路线';
 }
 
 /* 是不是真·触摸设备。桌面 Chrome/Edge 上 navigator.share 也是 function（那是 Windows
@@ -349,7 +357,9 @@ function initMap() {
   }, FALLBACK_AFTER_MS);
 }
 /* 地图要两样齐了才建：maplibre 本体 + 几何数据。两个都是 async 拉的，先后随意。 */
-let geomReady = typeof window.HIKE_GEOM !== 'undefined';
+/* 打卡点那一页不加载 routes.geom.js（~115KB，那里根本没有路线），几何永远等不到 ——
+   这个主题直接放行，否则 bootMap() 会一直卡在门口，地图根本建不起来（会踩，已防）。 */
+let geomReady = IS_SPOTS || typeof window.HIKE_GEOM !== 'undefined';
 /* 选中的高亮（路线是加亮的那条线，点位是那圈白光圈）。
    抽成一个函数，因为深链冷启动要走第二遍：带 #route= / #spot= 进来时，
    select()/selectSpot() 早就跑过了 —— 那时 map 还是 null，`if (map)` 把 setData
@@ -381,6 +391,7 @@ function bootMap() {
   const s0 = state.spotSel ? spots.find(x => x.id === state.spotSel) : null;
   if (r0) fitToRoute(r0, 0);
   else if (s0) fitToSpot(s0, 0);
+  else if (IS_SPOTS) fitAllSpots(0);   // 打卡点页开场：镜头落到这批点的范围上
   paintSelection();
 }
 window.__initMap = bootMap;
@@ -433,6 +444,8 @@ function matches(r, opts) {
 }
 
 function filtered() {
+  // 打卡点入口页不放路线 —— 这一页的主角是点位，列表由 spotHits() 供
+  if (IS_SPOTS) return [];
   const list = routes.filter(r => matches(r));
   const s = state.sort;
   list.sort((a, b) => s === 'name' ? a.name.localeCompare(b.name, 'zh')
@@ -460,6 +473,13 @@ function querySpots() {
 }
 
 function spotHits() {
+  // 打卡点入口页：点位就是内容本身，全部铺出来（搜索框仍能筛）。
+  // 这里**不看** state.spotsOn —— 那一页的「点位」开关已经藏了，
+  // 开关关着却找不到地方打开，是最糟的一种状态。
+  if (IS_SPOTS) {
+    const q = (state.q || '').trim().toLowerCase();
+    return q ? spots.filter(s => spotMatches(s, q)) : spots;
+  }
   return state.spotsOn ? querySpots() : [];
 }
 
@@ -551,6 +571,15 @@ function fitToSpot(s, duration) {
   map.flyTo({ center: [s.lon, s.lat], zoom: 14, padding: fitPadding(), duration: duration || 800 });
 }
 
+/* 打卡点入口页开场用：把镜头摆到**全部**点位的范围上（一个点用 fitToSpot，一批用它）。
+   一个点都没有时什么都不做 —— 别 fit 到一个空 bbox 上去。 */
+function fitAllSpots(duration) {
+  if (!map || !spots.length) return;
+  const b = new maplibregl.LngLatBounds();
+  spots.forEach(s => b.extend([s.lon, s.lat]));
+  map.fitBounds(b, { padding: fitPadding(), maxZoom: 15, duration: duration || 0 });
+}
+
 /* 窄屏：把面板收成一条，给地图腾地方。
    收起来之后必须按新的可视区把已选路线重新摆一次 —— 否则路线还缩在上半屏，
    底下空一大块，「腾地方」就白腾了。 */
@@ -633,9 +662,10 @@ function refresh() {
   }
 
   renderList(list, hits);
-  document.getElementById('cnt-hit').textContent = list.length;
-  document.getElementById('cnt-all').textContent = '/ ' + routes.length + ' 条路线'
-    + (hits.length ? ' · ' + hits.length + ' 个点位' : '');
+  document.getElementById('cnt-hit').textContent = IS_SPOTS ? hits.length : list.length;
+  document.getElementById('cnt-all').textContent = IS_SPOTS
+    ? '/ ' + spots.length + ' 个点位'
+    : '/ ' + routes.length + ' 条路线' + (hits.length ? ' · ' + hits.length + ' 个点位' : '');
 
   // 数据集里出现新区域时 chip 要跟着重建，否则新区域没法筛
   const sig = uniq('region').sort().join('|');
@@ -645,7 +675,8 @@ function refresh() {
   // 窄屏收起时，生效的筛选数写在「筛选」按钮上——筛选状态不能被折叠藏起来
   const nAct = state.regions.size + state.diffs.size + (state.dist !== 'all' ? 1 : 0)
     + (state.family ? 1 : 0) + (state.water ? 1 : 0);
-  document.getElementById('filter-count').textContent = nAct ? String(nAct) : '';
+  const fcEl = document.getElementById('filter-count');
+  if (fcEl) fcEl.textContent = nAct ? String(nAct) : '';
 
   // 结果被筛到视野外了才补镜头（视野里已经有结果就不动，见 ensureVisible）
   ensureVisible(list, hits);
@@ -710,11 +741,15 @@ function renderList(list, hits) {
     // 两段都出现时给路线也加个标签，否则「上面三个点、下面六十条线」看着没头没脑
     if (sp.length) out.push(`<div class="sec-label">路线<span class="n">${list.length}</span></div>`);
     out.push(...list.map(routeCardHTML));
-  } else {
+  } else if (!IS_SPOTS) {
+    // 打卡点那一页 list 恒为空，但「没有匹配的路线」在那儿是句胡话
+    // （页面上根本没有路线），所以这一整段对它跳过。
     out.push(`<div class="empty">没有匹配的路线。${sp.length ? ''
       : `<br><br>当前数据集共 <b>${routes.length}</b> 条，全部来自两步路用户上传的轨迹。`
         + spotHiddenHint()}</div>`);
   }
+  // 点位也没有：给一句人话，别留一屏空白（数据是人工维护的，这一天可能真会来）
+  if (!out.length) out.push(`<div class="empty">站上还没有点位。</div>`);
   box.innerHTML = out.join('');
   box.querySelectorAll('.card[data-id]').forEach(el => {
     el.onclick = () => select(el.dataset.id);
@@ -1328,7 +1363,7 @@ filterToggle.onclick = () => setFiltersOpen(!barEl.classList.contains('open'));
 // 窄屏搜索框只有一百多像素宽，长占位文案会被切掉半句，换成短的
 const qInput = document.getElementById('f-q');
 const Q_LONG = qInput.placeholder;
-const Q_SHORT = '搜索路线 / 标注点';
+const Q_SHORT = IS_SPOTS ? '搜索点位' : '搜索路线 / 标注点';
 function syncPlaceholder() {
   qInput.placeholder = window.matchMedia('(max-width: 900px)').matches ? Q_SHORT : Q_LONG;
 }
