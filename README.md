@@ -88,6 +88,12 @@ const THEME = document.body.classList.contains('theme-spots') ? 'spots' : 'hike'
    等不到，`bootMap()` 卡在门口、地图根本建不起来。
 3. **CSS** —— 只多了一条 `.themeswitch`，就是两个入口之间互跳的那个链接。
 
+   **另有一类坑不在上面三条里：按「页面相对」的资源引用。** 点位照片的路径是相对
+   **站根**存的（`spots/photos/x.webp`），在子目录里直接当 `src` 用会多出一层
+   （`/spots/spots/photos/…` → 404，且只在入口页现形，首页一切正常）。app.js 用
+   `document.currentScript` 算出站根再拼绝对 URL（`sitePath()`），所以**加新入口页
+   不用改任何路径代码** —— 但新写的资源引用都得过一遍它。
+
 ### `/spots/` 为什么是一条真路径，而不是 hash 深链
 
 微信爬链接时**不发送 hash**。`/#spot=xxx` 在它眼里就是首页，62 个点爬出一个样，
