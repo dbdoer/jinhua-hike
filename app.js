@@ -38,6 +38,23 @@ const SPOT_COLOR = '#15803d';
 const KIND_COLOR = { '打卡点': SPOT_COLOR };
 const spots = ((window.SPOT_DATA || {}).spots || []).slice();
 
+/* 站根。点位照片的路径（p.src）是相对**站根**存的（`spots/photos/…`），而子目录
+   入口页下按页面相对解析会多出一层 —— /spots/ 里的 `<img src="spots/photos/x.webp">`
+   会去要 /spots/spots/photos/x.webp，404（2026-09-26 就这么炸的）。
+   所以不猜、也不写死层数：按 app.js 自己的实际地址算出站根，再拼成绝对 URL。
+   首页 /、子页 /spots/、将来的 /water/、github.io 子路径、甚至 file:// 双击，
+   全都不用改代码。
+   `document.currentScript` 只在脚本执行期可读，所以这个 const 必须在文件顶层，
+   别挪进任何回调/函数里 —— 挪进去它就成了 null，退回兜底分支。 */
+const SITE_ROOT = (() => {
+  const el = document.currentScript || document.querySelector('script[src*="app.js"]');
+  try { return (el && el.src) ? new URL('.', el.src).href : ''; } catch (e) { return ''; }
+})();
+function sitePath(rel) {
+  if (!SITE_ROOT) return rel;                 // 算不出站根就退回老办法（首页本来也是对的）
+  try { return new URL(rel, SITE_ROOT).href; } catch (e) { return rel; }
+}
+
 /* 旬的刻度。**必须声明在这里**（文件上方），不能跟 seasonText 那几个函数放在一起：
    下面 `refresh()` 是在模块初始化时就调用的，refresh → seasonText → segText 会读它，
    而那时文件后半段的 const 还处在 TDZ 里 —— 只要有条数据填了最佳观赏期，
@@ -1097,8 +1114,8 @@ function photoBlock(s) {
   if (!ps.length) return '<p style="color:#94a3b8">这个点还没有图。</p>';
   return ps.map(p => `
     <figure class="shot">
-      <a href="${esc(p.src)}" target="_blank" rel="noopener">
-        <img src="${esc(p.src)}" alt="${esc(p.caption || s.name)}" loading="lazy">
+      <a href="${esc(sitePath(p.src))}" target="_blank" rel="noopener">
+        <img src="${esc(sitePath(p.src))}" alt="${esc(p.caption || s.name)}" loading="lazy">
       </a>
       ${(p.caption || p.shot_at) ? `<figcaption>${esc(p.caption || '')}${
         p.shot_at ? `<span class="date">${esc(p.shot_at)}</span>` : ''}</figcaption>` : ''}
