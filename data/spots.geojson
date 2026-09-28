@@ -72,6 +72,41 @@
   },
   {
    "type": "Feature",
+   "id": "guolilong-fendai",
+   "properties": {
+    "id": "guolilong-fendai",
+    "name": "郭力垄水库粉黛",
+    "kind": "打卡点",
+    "region": "婺城区",
+    "lon": 119.521105,
+    "lat": 29.07557,
+    "coord_src": "Google Earth 手标（WGS-84）",
+    "coord_acc_m": 50,
+    "intro": "郭力垄水库边坡地上的一片粉黛乱子草。9 月下旬花穗转粉、连片成雾，能一直看到 10 月上旬。2026 年 9 月 28 日实拍时已进入成片盛花。",
+    "access": "",
+    "best_from": "9-下",
+    "best_to": "10-上",
+    "verified_at": "2026-09-28",
+    "tags": [
+     "粉黛乱子草"
+    ],
+    "nav_gcj": {
+     "lon": 119.525964,
+     "lat": 29.072666
+    },
+    "best_i_from": 26,
+    "best_i_to": 27
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     119.521105,
+     29.07557
+    ]
+   }
+  },
+  {
+   "type": "Feature",
    "id": "fukan-jinhua-rescue",
    "properties": {
     "id": "fukan-jinhua-rescue",

@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "note": "人工维护。坐标手标、带来源与精度；机器只校验，不替你选点。改完跑 python tools/build_spots.py。加点的流程见 README「加一个点的流程」。",
-  "updated": "2026-09-24",
+  "updated": "2026-09-28",
   "spots": [
     {
       "id": "shuimen-pubu",
@@ -77,6 +77,32 @@
           "file": "hehua-01.webp",
           "credit": null,
           "shot_at": "2026-09-24"
+        }
+      ]
+    },
+    {
+      "id": "guolilong-fendai",
+      "name": "郭力垄水库粉黛",
+      "kind": "打卡点",
+      "region": "婺城区",
+      "lon": 119.521105,
+      "lat": 29.07557,
+      "coord_src": "Google Earth 手标（WGS-84）",
+      "coord_acc_m": 50,
+      "intro": "郭力垄水库边坡地上的一片粉黛乱子草。9 月下旬花穗转粉、连片成雾，能一直看到 10 月上旬。2026 年 9 月 28 日实拍时已进入成片盛花。",
+      "access": "",
+      "best_from": "9-下",
+      "best_to": "10-上",
+      "verified_at": "2026-09-28",
+      "tags": [
+        "粉黛乱子草"
+      ],
+      "photos": [
+        {
+          "file": "guolilong-01.webp",
+          "caption": "阴天柔光，花坡连片",
+          "credit": null,
+          "shot_at": "2026-09-28"
         }
       ]
     }
