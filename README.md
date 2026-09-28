@@ -386,13 +386,18 @@ python tools/build_spots.py --check-only  # 只看校验结果
 
 ### 加一个点的流程
 
+**先从 `spots/inbox/` 认准是哪张原图**，别拿最上面那张 —— 那个目录是累积的（gitignore，旧图不自动清），
+常同时躺着前几个点用过的照片。文件名里的时间（`微信图片_<YYYYMMDDHHMMSS>`）对上「打卡时间」，
+再拿已有 `spots/photos/*.webp` 的尺寸反推核对一次（`prep_photos` 只缩宽到 1200，`1200*H/W` 应吻合：
+2296x4080 → 1200x2132）。两条都合再动手。
+
 ```bash
 # 1. 到现场，拍照，用 Google Earth 取 WGS-84 坐标（记下精度）
 # 2. 图片压成 WebP、宽 1200，丢进 spots/photos/
 python tools/prep_photos.py --prefix shuanglong 原图1.jpg 原图2.jpg
-# 3. 往 spots/spots.json 里加一条
+# 3. 往 spots/spots.json 里加一条（region 别拍脑袋：county_of(lon,lat) 算，顺手量离县界的距离）
 # 4. python tools/build_spots.py     # 校验通过才生成 data/spots.js
-# 5. 本地 serve.bat 看一眼，提交
+# 5. 本地 serve.bat 看一眼（首页 + /spots/ 两个入口都要看），提交并推上线
 ```
 
 ## 新增一条路线
