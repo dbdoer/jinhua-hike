@@ -37,6 +37,41 @@
   },
   {
    "type": "Feature",
+   "id": "gudu-luwei",
+   "properties": {
+    "id": "gudu-luwei",
+    "name": "古渡公园芦苇",
+    "kind": "打卡点",
+    "region": "婺城区",
+    "lon": 119.665189,
+    "lat": 29.102117,
+    "coord_src": "Google Earth 手标（WGS-84）",
+    "coord_acc_m": 50,
+    "intro": "古渡公园里沿石板步道的一带芦苇。9 月中旬起抽穗，穗子米白偏浅黄、成片连到步道边，能一直看到 10 月底。2026 年 9 月 26 日实拍时已经抽齐了。",
+    "access": "",
+    "best_from": "9-中",
+    "best_to": "10-下",
+    "verified_at": "2026-09-26",
+    "tags": [
+     "芦苇"
+    ],
+    "nav_gcj": {
+     "lon": 119.669921,
+     "lat": 29.099191
+    },
+    "best_i_from": 25,
+    "best_i_to": 29
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     119.665189,
+     29.102117
+    ]
+   }
+  },
+  {
+   "type": "Feature",
    "id": "hehua",
    "properties": {
     "id": "hehua",

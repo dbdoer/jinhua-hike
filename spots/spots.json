@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "note": "人工维护。坐标手标、带来源与精度；机器只校验，不替你选点。改完跑 python tools/build_spots.py。加点的流程见 README「加一个点的流程」。",
-  "updated": "2026-09-28",
+  "updated": "2026-09-29",
   "spots": [
     {
       "id": "shuimen-pubu",
@@ -103,6 +103,32 @@
           "caption": "阴天柔光，花坡连片",
           "credit": null,
           "shot_at": "2026-09-28"
+        }
+      ]
+    },
+    {
+      "id": "gudu-luwei",
+      "name": "古渡公园芦苇",
+      "kind": "打卡点",
+      "region": "婺城区",
+      "lon": 119.665189,
+      "lat": 29.102117,
+      "coord_src": "Google Earth 手标（WGS-84）",
+      "coord_acc_m": 50,
+      "intro": "古渡公园里沿石板步道的一带芦苇。9 月中旬起抽穗，穗子米白偏浅黄、成片连到步道边，能一直看到 10 月底。2026 年 9 月 26 日实拍时已经抽齐了。",
+      "access": "",
+      "best_from": "9-中",
+      "best_to": "10-下",
+      "verified_at": "2026-09-26",
+      "tags": [
+        "芦苇"
+      ],
+      "photos": [
+        {
+          "file": "gudu-01.webp",
+          "caption": "石板步道左侧一带芦苇",
+          "credit": null,
+          "shot_at": "2026-09-26"
         }
       ]
     }
