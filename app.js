@@ -63,6 +63,14 @@ function sitePath(rel) {
    函数声明会提升，const 不会，所以函数放哪儿都行，这份表不行。 */
 const SEG_LABEL = ['上旬', '中旬', '下旬'];
 
+/* toast 的定时器句柄。**同样必须声明在文件上方**：`applyHash()` 是模块初始化时就跑的，
+   而在 hash 里那条路线已被撤下时，它会调 `toast()` 说一句「这条路线不在站里了」——
+   toast 里的 `tt` 那时还在下半篇的 TDZ 里，一读就 ReferenceError。真炸过
+   （2026-09-28 头一次删路线，老分享链接一打开：整个模块停摆 —— 地图不建、
+   `window.__hike` 都没挂上，只剩一张 63 条的列表孤零零戳在那儿）。
+   教训跟 SEG_LABEL 那条是同一个：**凡是初始化路径上会走到的函数，它碰的变量都得在文件上方声明**。 */
+let tt = null;
+
 /* 列表只要元数据（routes.index.js，~20KB）；几何（routes.geom.js，~130KB）
    晚一步到，到了再挂上去 —— 首屏不必等它，反正地图本来也得等 maplibre。 */
 let routes = ((window.HIKE_INDEX || {}).routes || []).slice();
@@ -1623,7 +1631,6 @@ function rdp(points, eps, mustKeep) {
 }
 
 /* --------------------------- 小工具 --------------------------- */
-let tt = null;
 function toast(msg) {
   const el = document.getElementById('toast');
   el.textContent = msg; el.hidden = false;

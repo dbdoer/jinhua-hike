@@ -71,7 +71,7 @@ const THEME = document.body.classList.contains('theme-spots') ? 'spots' : 'hike'
 
 | 入口 | 路径 | 主题 | 页面上有什么 |
 |---|---|---|---|
-| 徒步路线 | `/` | 无 class（默认） | 64 条两步路轨迹 + 点位开关 + 全套筛选 |
+| 徒步路线 | `/` | 无 class（默认） | 63 条两步路轨迹 + 点位开关 + 全套筛选 |
 | 打卡点 | `/spots/` | `theme-spots` | 只有点位，一条路线也不放 |
 
 `/spots/` 与首页的差别只有三处：
