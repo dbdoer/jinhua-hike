@@ -1,7 +1,7 @@
 {
  "note": "gpx/ 里原始 GPX 文件的字节指纹。任何一项对不上，都意味着「下载原始 GPX」给出去的已经不是上传者导出的那串字节。.gitattributes 里 *.gpx 标了 -text，禁止 git 做行尾转换 —— 别去掉它。用 python tools/check_gpx_manifest.py 校验。",
  "algorithm": "sha256",
- "count": 63,
+ "count": 64,
  "files": [
   {
    "file": "三县第一潭三瀑.gpx",
@@ -79,6 +79,13 @@
    "sha256": "6aaf2ab3242f176d57a4c82b5db8e2cfe8d555e039da57012ab32bc5f2db8cb4",
    "track_id": "85908276",
    "name": "兰溪铁甲山260614"
+  },
+  {
+   "file": "兰溪飞桥顶.gpx",
+   "bytes": 175964,
+   "sha256": "087d666d1f415723c5c6303cf127a18b479b263be50058c386e6c057e1290bfc",
+   "track_id": "90494173",
+   "name": "兰溪飞桥顶"
   },
   {
    "file": "兰溪龙门瀑布.gpx",

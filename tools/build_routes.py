@@ -201,6 +201,25 @@ def name_overrides():
     return _NAME_OVERRIDE
 
 
+# tools/data/route-aliases.json 是「老 id -> 现役 id」的去向表。撤下一条、又拿新轨迹顶上时
+# （2026-09-29：兰溪芝堰飞桥顶环线 tb_66435210 -> 兰溪飞桥顶 tb_90494173），
+# 当年分享出去的 #route=<老 id> 不能变成死链。构建期写进 routes.index.js，前端查一次。
+# 条目只在「老 id 确实不在站上」时才成立 —— 所以这里要反向校验，见 main()。
+_ALIASES = None
+
+
+def route_aliases():
+    global _ALIASES
+    if _ALIASES is None:
+        p = os.path.join(ROOT, "tools", "data", "route-aliases.json")
+        try:
+            with open(p, encoding="utf-8") as fp:
+                _ALIASES = json.load(fp).get("aliases") or {}
+        except FileNotFoundError:
+            _ALIASES = {}
+    return _ALIASES
+
+
 def parse_gpx(path):
     tree = ET.parse(path)
     root = tree.getroot()
@@ -450,6 +469,22 @@ def main():
             r["hours"] if r["hours"] else "-", r["region"], r["difficulty"]))
 
     os.makedirs(args.out, exist_ok=True)
+
+    # 老 id 的去向表：只认「老 id 已不在站上、新 id 在站上」的条目。
+    # 老 id 还在 → 说明这条根本没撤下（表里留着就是谎话）；新 id 不在 → 别名指向空气。
+    # 两种都报错不写产物，别让一个手滑的 id 悄悄变成一条死链。
+    ids = set(r["id"] for r in routes)
+    aliases = route_aliases()
+    for old, new in aliases.items():
+        if old in ids:
+            print("别名表里 %s 还在站上 —— 它没被撤下，把这一条从 tools/data/route-aliases.json 删掉" % old)
+            return 1
+        if new not in ids:
+            print("别名表里 %s 指向的 %s 不在站上（是不是文件名/ TrackId 改了？）" % (old, new))
+            return 1
+    if aliases:
+        print("老链接去向：%s" % "  ".join("%s -> %s" % (k, v) for k, v in sorted(aliases.items())))
+
     with open(os.path.join(args.out, "routes.json"), "w", encoding="utf-8") as fp:
         json.dump({
             "generated_from": "两步路 GPX 导出",
@@ -476,6 +511,9 @@ def main():
             "generated_from": "两步路 GPX 导出",
             "count": len(index_routes),
             "routes": index_routes,
+            # 老 id 的去向（撤下后被新轨迹顶上）。前端 applyHash 查这张表，
+            # 所以它必须跟着 index 先到 —— 晚了就等于老链接先撞一次死链。
+            "aliases": aliases,
         }, fp, ensure_ascii=False)
         fp.write(";\n")
     with open(os.path.join(args.out, "routes.geom.js"), "w", encoding="utf-8") as fp:

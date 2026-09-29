@@ -71,7 +71,7 @@ const THEME = document.body.classList.contains('theme-spots') ? 'spots' : 'hike'
 
 | 入口 | 路径 | 主题 | 页面上有什么 |
 |---|---|---|---|
-| 徒步路线 | `/` | 无 class（默认） | 63 条两步路轨迹 + 点位开关 + 全套筛选 |
+| 徒步路线 | `/` | 无 class（默认） | 64 条两步路轨迹 + 点位开关 + 全套筛选 |
 | 打卡点 | `/spots/` | `theme-spots` | 只有点位，一条路线也不放 |
 
 `/spots/` 与首页的差别只有三处：
@@ -262,7 +262,7 @@ python tools/check_gpx_manifest.py --quiet   # 只报问题（build_routes.py �
    工作区 169314 字节、仓库里只有 164150 —— 差 5164，正好是 CRLF 的个数。
    **构建照样成功**，光看「跑通了」根本发现不了。
 2. 所以 `.gitattributes` 里写了 `*.gpx -text`，**禁止一切行尾转换，别删它**。
-3. `gpx/MANIFEST.json` 记录 60 个 GPX 的 sha256 与字节数；`build_routes.py` 收尾时会自动
+3. `gpx/MANIFEST.json` 记录当前全部 GPX 的 sha256 与字节数（现在 64 个）；`build_routes.py` 收尾时会自动
    跑一次校验（quiet 模式），不一致就提示。清单**刻意不放时间戳** —— 只有内容真变了 diff 才动。
 
 另注：站点发布的是整个仓库，`gpx/` 也在发布范围内。**因此"删掉按钮"并不等于"文件不可达"**，
@@ -296,6 +296,28 @@ python tools/check_gpx_manifest.py --quiet   # 只报问题（build_routes.py �
   **规矩**：凡是模块初始化时会走到的函数，它碰的模块级变量都得声明在文件上方；删路线后
   要专门拿老深链开一次页面，断言 `window.__hike` 存在且地图建起来了 ——
   「模块半路死掉」和「功能没被触发」看起来一样。
+
+### 撤下之后又拿新轨迹顶上：老 id 的去向表
+
+撤下一条、再用一条新导出的轨迹替换它（2026-09-29：`tb_66435210` 兰溪芝堰飞桥顶环线 →
+`tb_90494173` 兰溪飞桥顶，同一座山、同一条起点的另一版轨迹），当年的分享链接不能就此作废 ——
+别人微信里那条 `#route=tb_66435210` 还得能打开。
+
+```
+tools/data/route-aliases.json  ──build_routes.py──▶  data/routes.index.js 的 aliases 字段
+                                                     ──app.js 的 applyHash() 查一次
+```
+
+- 表是手写的、极小的：`{"aliases": {"<已不在站的 id>": "<顶上来的 id>"}}`。
+- **构建期双向校验，不合就报错退出**：老 id 若还在站上（说明根本没撤下，表里留着是谎话）、
+  或新 id 不在站上（指向空气），`build_routes.py` 都不写产物。手滑的 id 不会悄悄变成死链。
+- 前端只在 `applyHash()` 里查一次，随后 `select()` 末尾的 `syncHash()` 会把地址栏换成新 id ——
+  用户看到的是顶上来的那条轨迹，**复制到的也是新链接**，旧 id 自然退场。有去向了就不弹 toast，
+  链接本来就是给「同一个地方」的；**只有真的谁也不认识那个 id 时，才说「这条路线不在站里了」**。
+- 别删表里的条目：删掉就等于宣告当年的分享链接作废。表要跟着 `routes.index.js` 一起发 ——
+  晚一步到就等于老链接先撞一次死链，所以它写在 index 里，不另开文件。
+- `/spots/` 入口页不加载 `routes.index.js`，`HIKE_INDEX` 是 undefined —— `ALIASES` 必须写成
+  `(window.HIKE_INDEX || {}).aliases || {}` 这种能退化的取法，否则那一页开屏就 ReferenceError。
 
 ## 点位：自己打点，跟两步路那批数据分开
 

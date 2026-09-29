@@ -75,6 +75,12 @@ let tt = null;
    晚一步到，到了再挂上去 —— 首屏不必等它，反正地图本来也得等 maplibre。 */
 let routes = ((window.HIKE_INDEX || {}).routes || []).slice();
 
+/* 老链接的去向表（老 id -> 现役 id）：某条路线撤下、又被新轨迹顶上时，当年分享出去的
+   `#route=<老 id>` 还得好使。表由 tools/data/route-aliases.json 在构建期生成，
+   跟着 index 一起到（见 build_routes.py）。同样声明在文件顶部 —— `applyHash()` 是模块
+   初始化时就跑的（2026-09-28 就是在这条路径上撞过一次 TDZ）。 */
+const ALIASES = (window.HIKE_INDEX || {}).aliases || {};
+
 function attachGeometry() {
   const g = window.HIKE_GEOM;
   if (!g) return;
@@ -141,8 +147,12 @@ function applyHash() {
   }
   const id = m[2];
   if (m[1] === 'route') {
-    if (!routes.some(x => x.id === id)) { toast('这条路线不在站里了，可能已被撤下'); return false; }
-    if (state.selected !== id) select(id);
+    // 老 id 有去向就先换成现役 id。不额外弹提示：链接本来就是给「同一个地方」的，
+    // 而且 select() 末尾的 syncHash() 会把地址栏一并换成新链接 —— 用户看到的是
+    // 那条顶上来的轨迹，复制到的也是它的链接，旧 id 就此退场。
+    const cur = ALIASES[id] || id;
+    if (!routes.some(x => x.id === cur)) { toast('这条路线不在站里了，可能已被撤下'); return false; }
+    if (state.selected !== cur) select(cur);
     return true;
   }
   if (!spots.some(x => x.id === id)) { toast('这个点位不在站里了'); return false; }
