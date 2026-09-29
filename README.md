@@ -71,22 +71,44 @@ const THEME = document.body.classList.contains('theme-spots') ? 'spots' : 'hike'
 
 | 入口 | 路径 | 主题 | 页面上有什么 |
 |---|---|---|---|
-| 徒步路线 | `/` | 无 class（默认） | 64 条两步路轨迹 + 点位开关 + 全套筛选 |
+| 徒步路线 | `/` | 无 class（默认） | 64 条两步路轨迹 + 全套筛选（点线同屏） |
 | 打卡点 | `/spots/` | `theme-spots` | 只有点位，一条路线也不放 |
 
 `/spots/` 与首页的差别只有三处：
 
 1. **HTML** —— 自己的 `<title>` / `description` / og 标签、自己的品牌名；藏掉只对路线
-   有意义的控件（区域 / 难度 / 距离 / 亲子涉水 / 排序 / 重置 / 点位开关）；图例只留
-   点位那一行；脚本**只加载 `data/spots.js`**，`routes.index.js`（gzip 10KB）和
-   `routes.geom.js`（gzip 133KB）一字节都不加载。缺了它们不会崩 —— `routes` 本来就是
-   `((window.HIKE_INDEX || {}).routes || [])`，没有就退化成空数组。
+   有意义的控件（区域 / 难度 / 距离 / 亲子涉水 / 排序 / 重置）；图例只留点位那一行；
+   脚本**不加载 `routes.geom.js`（gzip 133KB）** —— 这一页没有路线，那 133KB 一字节不花。
+   `routes.index.js`（gzip 10KB）则是**要**加载的，就为了左下角「徒步路线」入口上那个
+   数字是真的（见下面「两个入口上的数量」）。
 2. **app.js 里的分支（共 6 处，都以 `IS_SPOTS` 开头）** —— `filtered()` 返回空、
    `spotHits()` 铺出全部点位（搜索框仍能筛）、计数文案、`renderList` 的空态、
    `geomReady` 放行、开场镜头 `fitAllSpots()`。最后那个是**必须**的：
    `geomReady` 初值看 `window.HIKE_GEOM` 在不在，这一页不加载几何，不特判就永远
    等不到，`bootMap()` 卡在门口、地图根本建不起来。
-3. **CSS** —— 只多了一条 `.themeswitch`，就是两个入口之间互跳的那个链接。
+3. **CSS** —— 只多了一条 `.entries`（左下角两个入口）。入口之间是**跳转**不是开关，
+   所以没有反白态那种东西。
+
+### 两个入口上的数量
+
+左下角那两个入口（徒步路线 / 打卡点）**不写死数字**，由 `app.js` 按数据填：
+
+```js
+if (entryCntHike && routes.length) entryCntHike.textContent = routes.length;
+if (entryCntSpot && spots.length) entryCntSpot.textContent = spots.length;
+```
+
+写死的数字一定会撒谎 —— 上线那天写着 4，第二天点位加到 6，页面上还挂着 4。
+这就是 `/spots/` 要加载 `routes.index.js` 的唯一理由：10KB 换一个不说谎的数字，划算。
+
+**「点位」那个复选框已下架**（2026-09-26）。它和这两个入口长得像、做的事却不同
+（一个切列表、一个开关图层），并排摆着没人分得清；而且窄屏下 `.map-tools` 整块是
+`display:none`，手机上本来就够不到它。现在**地图上点线永远同屏** —— 入口切的只是
+「面板看谁」。`state.spotsOn` 恒为 `true`，字段留着：将来真要做「隐藏点位」时还在。
+
+**改 DOM 顺序会踩的坑**：窄屏那条 `.entries{bottom:calc(46% + 24px)}` 好懂，但
+`#panel.collapsed ~ .entries{bottom:72px}` 用的是**兄弟选择器** —— `.entries` 必须排在
+`#panel` **之后**，中间挪了位置，面板一收起入口就飞回屏幕中间。
 
    **另有一类坑不在上面三条里：按「页面相对」的资源引用。** 点位照片的路径是相对
    **站根**存的（`spots/photos/x.webp`），在子目录里直接当 `src` 用会多出一层
@@ -316,8 +338,9 @@ tools/data/route-aliases.json  ──build_routes.py──▶  data/routes.index
   链接本来就是给「同一个地方」的；**只有真的谁也不认识那个 id 时，才说「这条路线不在站里了」**。
 - 别删表里的条目：删掉就等于宣告当年的分享链接作废。表要跟着 `routes.index.js` 一起发 ——
   晚一步到就等于老链接先撞一次死链，所以它写在 index 里，不另开文件。
-- `/spots/` 入口页不加载 `routes.index.js`，`HIKE_INDEX` 是 undefined —— `ALIASES` 必须写成
-  `(window.HIKE_INDEX || {}).aliases || {}` 这种能退化的取法，否则那一页开屏就 ReferenceError。
+- 取 `ALIASES` 一律写成 `(window.HIKE_INDEX || {}).aliases || {}` 这种能退化的取法。
+  `/spots/` 现在也加载 `routes.index.js`（为了入口上的数量），但**别依赖它一定在** ——
+  哪天有人为了省那 10KB 把它去掉，搜索框开屏就 ReferenceError。
 
 ## 点位：自己打点，跟两步路那批数据分开
 

@@ -143,9 +143,9 @@ window._hmt = window._hmt || [];
 
   <!-- 右上角这组管「看什么」，跟上面那排筛选（筛什么）分开 -->
   <div class="map-tools" id="map-tools">
-    <label class="spot-switch" title="本站自己实地打的点位（瀑布、秋色等），与两步路的路线数据无关">
-      <input type="checkbox" id="f-spots" checked><span>点位</span>
-    </label>
+    <!-- 「点位」那个复选框已下架（2026-09-26）：它和左下角两个入口长得像、做的事却
+         不同（一个切列表、一个开关图层），并排摆着没人分得清；而且窄屏下这块是
+         display:none，手机上本来就够不到。现在地图上点线永远同屏。 -->
     <div class="base-switch" id="base-switch">
       <button data-base="liberty" class="on">简洁</button>
       <button data-base="topo">地形等高线</button>
@@ -175,6 +175,14 @@ window._hmt = window._hmt || [];
     <a href="mailto:ijinhua2026@163.com?subject=%E8%AF%B7%E6%B1%82%E6%92%A4%E4%B8%8B%E8%BD%A8%E8%BF%B9">ijinhua2026@163.com</a>
   </footer>
 </aside>
+
+<!-- 两个入口。切的是「面板看谁」，不是地图上有什么 —— 点线永远同屏（见 README）。
+     哪一个是当前页写死在 HTML 里（.on），不靠 JS 猜；数量由 app.js 按数据填，
+     别写死数字（路线和点位天天在长）。 -->
+<nav class="entries" id="entries">
+  <a class="entry on" href="./"><span class="ic"></span>徒步路线<span class="n" id="entry-cnt-hike"></span></a>
+  <a class="entry" href="spots/"><span class="ic"></span>打卡点<span class="n" id="entry-cnt-spot"></span></a>
+</nav>
 
 <!-- 图例 -->
 <div class="legend">

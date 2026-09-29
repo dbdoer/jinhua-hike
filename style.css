@@ -57,13 +57,21 @@ button.primary:hover{background:#047857}
 .base-switch button.on{background:var(--ink);color:#fff}
 .base-switch button:disabled{opacity:.38;cursor:not-allowed}
 
-/* 入口页互跳（徒步页 / 打卡点页各带一个指向对方的链接）。
-   照 .base-switch 的样子描，但它是**跳转**不是开关 —— 所以没有选中的反白态，
-   悬停才反白。 */
-.themeswitch{display:inline-flex;align-items:center;padding:5px 11px;font-size:12px;
-  border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink2);
-  text-decoration:none;white-space:nowrap}
-.themeswitch:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
+/* 两个入口（徒步路线 / 打卡点）。点击切的是**面板看谁**，不是地图上有什么 ——
+   点线永远同屏，这是这站的底色（见 README「两个入口页」）。
+   宽屏跟在筛选条下沿左上角，top 由 layoutPanel() 按条的实测高度写（别写死 px，
+   那样 chip 一换行就错位）；窄屏在下面 @media 里改成贴着面板上沿，拇指够得到。
+   z-index 取 3：低于筛选条(5)和面板(4)，万一真重叠了它们该赢。 */
+.entries{position:absolute;left:12px;top:150px;z-index:3;display:flex;gap:8px}
+.entry{display:flex;align-items:center;gap:8px;text-decoration:none;border-radius:12px;
+  padding:9px 14px;font-size:13.5px;border:1px solid var(--line);background:#fff;color:var(--ink);
+  box-shadow:var(--shadow);transition:.15s}
+.entry:hover{border-color:#cbd5e1}
+.entry .ic{width:9px;height:9px;border-radius:50%;background:var(--green);flex:0 0 auto}
+.entry .n{font-size:11.5px;color:var(--ink3);font-weight:400}
+.entry.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.entry.on .ic{background:#4ade80}
+.entry.on .n{color:#cbd5e1}
 
 /* 窄屏折叠按钮：宽屏不出现（样式在下面的 media query 里打开）
    展开后按钮改口叫「收起」。原先一直写「筛选」，等于没告诉用户点这儿能收回去。
@@ -261,4 +269,9 @@ button.primary:hover{background:#047857}
      沿用宽屏那个 46vh 等于让一张图占掉一个多面板。收窄的图会自己居中，整张还在。 */
   .shot img{max-height:34vh}
   .legend{display:none}
+  /* 两个入口：窄屏贴着面板上沿 —— 拇指够得到，也不跟顶栏抢那一行。
+     面板高度就是上面那句 height:46%，所以用同一个比例算，别写死 px；
+     面板收起来只剩 48px 时跟着落下去（.entries 在 DOM 里必须排在 #panel 之后）。 */
+  .entries{top:auto;bottom:calc(46% + 24px)}
+  #panel.collapsed ~ .entries{bottom:72px}   /* 48px 面板 + 12 边距 + 12 间距 */
 }

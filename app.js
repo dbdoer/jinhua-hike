@@ -445,11 +445,17 @@ function layoutPanel() {
   const bar = document.querySelector('.bar');
   const panel = document.getElementById('panel');
   // 窄屏下面板贴在底部（样式表里的 media query），此时别写内联 top，否则把它顶下去、底下空一截
+  const entries = document.getElementById('entries');
   if (window.matchMedia('(max-width: 900px)').matches) {
     panel.style.removeProperty('top');
+    // 窄屏两个入口贴着面板上沿（位置交给样式表的 media query），这里别再写内联 top
+    if (entries) entries.style.removeProperty('top');
     return;
   }
-  panel.style.top = Math.round(bar.getBoundingClientRect().bottom + 10) + 'px';
+  // 筛选条高度会随 chip 换行变，两个都得跟着走 —— 同一个来源量，别各量各的
+  const below = Math.round(bar.getBoundingClientRect().bottom + 10) + 'px';
+  panel.style.top = below;
+  if (entries) entries.style.top = below;
 }
 window.addEventListener('resize', layoutPanel);
 
@@ -715,6 +721,11 @@ function refresh() {
 
   // 结果被筛到视野外了才补镜头（视野里已经有结果就不动，见 ensureVisible）
   ensureVisible(list, hits);
+
+  // 收尾再量一次条高。chip 是上面 buildFilterChips() 刚建的，筛选条因此变高 ——
+  // 而 layoutPanel() 在模块初始化时（chip 还没建）已经量过一次，量少了十几像素，
+  // 面板和两个入口都会顶进筛选条里（面板这个老毛病一直在，只是不容易看出来）。
+  layoutPanel();
 }
 
 /* --------------------------- 列表卡片 --------------------------- */
@@ -1413,9 +1424,11 @@ document.querySelectorAll('#base-switch button').forEach(b => {
   b.onclick = () => { state.base = b.dataset.base; applyBase(); track('底图', '切换', state.base); };
 });
 
-// 点位的总开关：显式的开关，不按别的东西自动推断（这站的规矩）。
-// 但一个点都还没有时，别把开关和图例留在页面上 —— 点了什么都不会发生，
-// 那种控件比没有更糟。spots.json 里一有数据，它们自己就回来。
+// 点位那个复选框已下架（2026-09-26）。理由是它和「两个入口」长得像、做的事却不同
+// （一个切列表、一个开关图层），并排摆着没人分得清；而且窄屏下 .map-tools 整块是
+// display:none，手机上本来就够不到它。现在地图上点线**永远同屏**，
+// state.spotsOn 恒为 true —— 别把这个字段删了，将来真要做「隐藏点位」时它还在。
+// 一个点都还没有时，图例那行照旧藏起来。
 /* 图例那行「点位」跟着数据里的类目走：图上是什么颜色，图例就得是什么颜色。
    原先写死一颗橙点（#c2410c）—— 那是在只有一个类目、也就它一种颜色的年代。
    加了「瀑布」这个深青色之后，图例就在说谎：图上是深青，图例里找不着。 */
@@ -1425,6 +1438,14 @@ if (legendSpot && spots.length) {
   legendSpot.innerHTML = '<span>点位</span>' + kinds.map(k =>
     `<span class="kind"><i style="background:${KIND_COLOR[k] || SPOT_COLOR}"></i>${esc(k)}</span>`).join('');
 }
+
+/* 两个入口上的数量由数据填，别写死在 HTML 里（路线和点位天天在长）。
+   首页两者都加载；/spots/ 那边也加载 routes.index.js（gzip 10KB）就是为了这个数字
+   不撒谎 —— 真正的省是不加载 routes.geom.js（gzip 133KB），那一份照旧不加载。 */
+const entryCntHike = document.getElementById('entry-cnt-hike');
+const entryCntSpot = document.getElementById('entry-cnt-spot');
+if (entryCntHike && routes.length) entryCntHike.textContent = routes.length;
+if (entryCntSpot && spots.length) entryCntSpot.textContent = spots.length;
 
 const spotsChk = document.getElementById('f-spots');
 if (!spots.length) {

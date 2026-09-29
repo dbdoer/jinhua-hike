@@ -129,9 +129,8 @@ window._hmt = window._hmt || [];
   </div>
 
   <div class="map-tools" id="map-tools">
-    <!-- 入口页互跳。放在右上角这组控件里，而不是挤在品牌名旁边 —— 品牌名那行
-         窄屏已经很紧，再塞东西就得换行、把筛选条顶下去。 -->
-    <a class="themeswitch" href="../">徒步路线 →</a>
+    <!-- 入口互跳交给左下角那两个 .entries 了，这里不放第二个入口 -->
+    <!-- 窄屏下这块整块 display:none，所以入口不能放在这儿 -->
     <div class="base-switch" id="base-switch">
       <button data-base="liberty" class="on">简洁</button>
       <button data-base="topo">地形等高线</button>
@@ -157,6 +156,13 @@ window._hmt = window._hmt || [];
   </footer>
 </aside>
 
+<!-- 两个入口。切的是「面板看谁」，不是地图上有什么 —— 点线永远同屏（见 README）。
+     这一页是「打卡点」那个入口的落地页，所以打卡点带 .on；数量由 app.js 按数据填。 -->
+<nav class="entries" id="entries">
+  <a class="entry" href="../"><span class="ic"></span>徒步路线<span class="n" id="entry-cnt-hike"></span></a>
+  <a class="entry on" href="./"><span class="ic"></span>打卡点<span class="n" id="entry-cnt-spot"></span></a>
+</nav>
+
 <!-- 图例只留点位一行（路线那几行是难度/起点/标注，这一页不存在那些东西）。
      类目名和颜色由 app.js 按数据里的 kind 填。 -->
 <div class="legend">
@@ -172,11 +178,13 @@ window._hmt = window._hmt || [];
   <button type="button" onclick="hideCopyBox()">关闭</button>
 </div>
 
-<!-- 只加载点位数据 + 逻辑。
-     **routes.index.js（元数据 ~10KB gzip）和 routes.geom.js（几何 ~115KB）都不加载** ——
-     这一页没有路线，一字节都不该花在这上面。app.js 里 `routes` 本来就是
-     `((window.HIKE_INDEX || {}).routes || [])`，缺了它自然退化成空数组；
-     geomReady 那边则由 IS_SPOTS 直接放行（见 app.js 的注释）。 -->
+<!-- 点位数据 + 路线**元数据** + 逻辑。
+     **routes.geom.js（几何，gzip 133KB）不加载** —— 这页没有路线，一字节都不花。
+     但 routes.index.js（gzip 10KB）要加载：左下角「徒步路线」入口上那个数量得是真的，
+     写死一个数字迟早撒谎。app.js 里 `routes` 本来就等着它，缺了会退化成空数组；
+     geomReady 那边由 IS_SPOTS 直接放行（见 app.js 注释），attachGeometry 也有
+     `if (!g) return;` 保护，所以没有几何不会炸。 -->
+<script src="../data/routes.index.js"></script>
 <script src="../data/spots.js"></script>
 <script src="../app.js"></script>
 <script async src="https://cdn.staticfile.org/maplibre-gl/5.6.0/maplibre-gl.min.js"
