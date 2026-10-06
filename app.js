@@ -947,21 +947,26 @@ function renderDetail(r) {
     <h4>路线档案 / 数据来源</h4>
     ${navRow('数据来源', esc(s.provider || '—'))}
     ${navRow('上传者', esc(s.creator || '—'))}
-    <!-- 这一节原本还有三行，已删：「两步路轨迹 ID」「上传者 ID」「GPX 文件」。
-         昵称是版权署名，必须留；TrackId 与上传者的数字 ID 属于个人信息里没有
-         必要展示的那部分。GPX 文件那行印的是源文件名，等于把原始文件那条直达
-         地址也指出来了 —— 站点发布的是整个仓库，源文件就在发布范围内，删掉这行
-         是为了不再主动指路（并不是关上了门，见 README）。
-         注意：TrackId 仍以线路主键 id（tb_XXXX）的形式存在于 URL 与 data/*.js 中，
-         动它会让已分享的链接全部失效，有意保留。
-         也提醒一句：显示名就是用文件名改的，所以"文件名"其实约等于标题，
-         这一档挡的是"路径"，不是"名字"。 -->
+    ${navRow('两步路路线编号', s.track_id
+      ? `<span class="tid">${esc(s.track_id)}</span><button type="button" class="tid-copy" data-copy="${esc(s.track_id)}">复制</button>`
+      : '—')}
+    <!-- 「两步路轨迹 ID」这一行：2026-09-21 删过，2026-09-30 又装回来（带复制按钮）。
+         站主定的口径 —— 给的是「去哪儿找」的线索，不是替人分发文件。两步路 App
+         自己的使用说明写着搜索栏可以「搜索轨迹编号、名称或描述」，所以粘编号过去
+         就能找到并下载原轨迹（数据里一直有 source.track_id，当年只删了显示没删字段，
+         这次纯前端改动）。
+         仍然不显示的两项：「上传者 ID」（个人信息，没有展示的必要）、「GPX 文件」
+         （印的是源文件名，等于把原始文件的直达地址指出来）。
+         TrackId 同时也是线路主键 id（tb_XXXX），长在 URL 与 data/*.js 里，动它会让
+         已分享的链接全部失效，有意保留 —— 现在它只是从"只当主键"变成了"也允许见人"。 -->
     ${navRow('录制 App 版本', esc(s.app_version || '—'))}
     ${navRow('轨迹录制日期', exported || '—')}
     ${navRow('难度判定依据', esc(r.difficulty_reason || '—'))}
     ${navRow('亲子判定依据', r.family === true ? esc(r.family_reason || '—') : '未判定为亲子')}
     ${navRow('涉水判定依据', r.has_water === true ? esc(r.water_reason || '—') : '未识别到涉水关键词')}
     ${navRow('爬升估算口径', '3 m 滞回阈值滤 GPS 高程抖动，仍属估算')}
+
+    ${s.track_id ? `<p class="tid-hint">复制编号，到两步路 App「轨迹」的搜索栏粘贴，就能找到并下载这条轨迹。</p>` : ''}
 
     <div class="note" style="margin-top:14px">
       轨迹版权归上传者所有，本页仅作展示演示；出行前请以现场路况、天气和景区公告为准。<br>

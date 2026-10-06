@@ -179,6 +179,11 @@ button.primary:hover{background:#047857}
 .kv{font-size:12.5px;color:var(--ink2);display:flex;justify-content:space-between;gap:10px;padding:3px 0;border-bottom:1px dashed var(--line)}
 .kv:last-child{border:none}
 .kv span:last-child{color:var(--ink);text-align:right;word-break:break-all}
+/* 两步路编号那一行：数字用等宽字体（抄下来不会把 0 和 O 看错），按钮压在行内。
+   档案节一行只有 12.5px 高，按钮要跟着缩，不然这一行被顶成两行、白吃 16px。 */
+.kv .tid{font-family:ui-monospace,Consolas,Menlo,monospace;letter-spacing:.02em}
+.kv button.tid-copy{padding:2px 9px;font-size:11.5px;border-radius:7px;margin-left:8px;vertical-align:1px}
+.tid-hint{margin:9px 0 0;font-size:11.5px;color:var(--ink3);line-height:1.6}
 
 /* ---------- 点位详情 ---------- */
 /* 图按宽 1200、WebP、200 KB 上下入库；这里再挂 loading=lazy，别让列表把图都拉下来。
