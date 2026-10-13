@@ -696,6 +696,8 @@ function refresh() {
           id: s.id, name: s.name, kind: s.kind,
           color: KIND_COLOR[s.kind] || SPOT_COLOR,
           season: seasonText(s),
+          // 气泡要用它：非季节性点的「四季皆宜」这类话，存在数据里，不是算出来的
+          best_note: s.best_note || null,
         },
         geometry: { type: 'Point', coordinates: [s.lon, s.lat] },
       })) : [],
@@ -1111,6 +1113,13 @@ function bestRange(s) {
     ? null : segText(s.best_i_from) + ' ~ ' + segText(s.best_i_to);
 }
 
+/* 非季节性点位的「观赏时节」是**在数据里写明**的，不是从「没填旬」推出来的。
+   草坪、球场、路边的树，四季都是一个样 —— 那就在 spots.json 里写 best_note。
+   真没填的点仍然显示「未填」：让「不适用」和「忘了填」在页面上分得开。 */
+function bestNote(s) {
+  return (s && s.best_note) || null;
+}
+
 /* 当季文案 —— 赏秋图的价值全落在这一句上。
    十月打开和十二月打开，看到的应该是不同的答案；否则这张图就只是一堆钉子。
    刻度用「旬」：再细没人维护得起，再粗（按月）就不够用。 */
@@ -1192,7 +1201,7 @@ function renderSpotDetail(s) {
 
     <h4>什么时候来看</h4>
     <div class="grid">
-      <div><span>最佳观赏期</span><b style="font-size:13px">${bestRange(s) || '未填'}</b></div>
+      <div><span>最佳观赏期</span><b style="font-size:13px">${bestRange(s) || bestNote(s) || '未填'}</b></div>
       <div><span>最后一次确认</span><b style="font-size:13px">${s.verified_at || '未填'}</b></div>
       <div><span>坐标精度</span><b style="font-size:13px">${s.coord_acc_m != null ? '±' + s.coord_acc_m + ' m' : '未填'}</b></div>
     </div>
@@ -1478,10 +1487,13 @@ function bindMapEvents() {
     map.getCanvas().style.cursor = (sp || f) ? 'pointer' : '';
     map.setFilter('route-hover', ['==', ['get', 'id'], f ? f.properties.id : '__none__']);
     if (sp) {
-      // 气泡里只放两样：是什么树、现在是不是时候
+      // 气泡里只放两样：是什么树、现在是不是时候。
+      // 「时节」那句：有旬就按旬算相对时间；非季节性的点读数据里写明的 best_note；
+      // 两样都没有就不出这一行 —— 「未填」不该被当成默认值糊在气泡里。
+      const when = sp.properties.season || bestNote(sp.properties);
       popup.setLngLat(e.lngLat).setHTML(
-        `<b>${esc(sp.properties.name)}</b><br>${esc(sp.properties.kind)}<br>
-         <span style="color:#64748b">${esc(sp.properties.season || '最佳观赏期未填')}</span>`).addTo(map);
+        `<b>${esc(sp.properties.name)}</b><br>${esc(sp.properties.kind)}` +
+        (when ? `<br><span style="color:#64748b">${esc(when)}</span>` : '')).addTo(map);
     } else if (f) {
       popup.setLngLat(e.lngLat).setHTML(
         `<b>${esc(f.properties.name)}</b><br>${f.properties.distance_km} km · 爬升 ${f.properties.ascent_m} m<br>

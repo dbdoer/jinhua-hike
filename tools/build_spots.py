@@ -130,8 +130,14 @@ def validate(data, photos_dir):
         if f is not None and t is not None and f > t:
             bad("最佳期起止反了（%s -> %s）" % (s["best_from"], s["best_to"]))
         if f is None:
-            soft("没填最佳观赏期 —— 有季节性的点（花期、丰水期、秋色）最好填上，"
-                 "四季都长那样、什么时候去都行的点忽略这条")
+            if s.get("best_note"):
+                pass          # 非季节性点：时节写在 best_note 里（如「四季皆宜」），不算缺
+            else:
+                soft("没填最佳观赏期 —— 有季节性的点（花期、丰水期、秋色）最好填上，"
+                     "四季都长那样、什么时候去都行的点忽略这条")
+        if f is not None and s.get("best_note"):
+            soft("既填了最佳观赏期（%s）又填了 best_note（%s）—— 页面上只显示前者，"
+                 "把 best_note 删掉" % (s["best_from"], s["best_note"]))
 
         if s.get("verified_at") and not is_date(s["verified_at"]):
             bad("verified_at 要是 YYYY-MM-DD")
