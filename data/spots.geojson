@@ -173,6 +173,40 @@
   },
   {
    "type": "Feature",
+   "id": "muqiuchang",
+   "properties": {
+    "id": "muqiuchang",
+    "name": "婺城区木球场",
+    "kind": "打卡点",
+    "region": "婺城区",
+    "lon": 119.585454,
+    "lat": 29.094492,
+    "coord_src": "Google Earth 手标（WGS-84）",
+    "coord_acc_m": 50,
+    "intro": "一大片开阔草坪，适合露营、遛娃；草坪边上有卫生间，停车也方便。2026 年 10 月 11 日实拍时草坪整体还是绿的，靠边一丛已经泛黄。",
+    "access": "",
+    "verified_at": "2026-10-11",
+    "tags": [
+     "草坪",
+     "露营"
+    ],
+    "nav_gcj": {
+     "lon": 119.590148,
+     "lat": 29.091485
+    },
+    "best_i_from": null,
+    "best_i_to": null
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     119.585454,
+     29.094492
+    ]
+   }
+  },
+  {
+   "type": "Feature",
    "id": "biye-tree",
    "properties": {
     "id": "biye-tree",
