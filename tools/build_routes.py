@@ -208,6 +208,23 @@ def name_overrides():
 _ALIASES = None
 
 
+# tools/data/route-regions.json 是「区域例外表」：键=文件名，值={region, region_source}。
+# 只在三步走都认不出时用（跟显示名的例外表同性质：新数据默认走算法，例外表是给算错的兜底）。
+_REGION_OVERRIDE = None
+
+
+def region_overrides():
+    global _REGION_OVERRIDE
+    if _REGION_OVERRIDE is None:
+        p = os.path.join(ROOT, "tools", "data", "route-regions.json")
+        try:
+            with open(p, encoding="utf-8") as fp:
+                _REGION_OVERRIDE = json.load(fp).get("regions") or {}
+        except FileNotFoundError:
+            _REGION_OVERRIDE = {}
+    return _REGION_OVERRIDE
+
+
 def route_aliases():
     global _ALIASES
     if _ALIASES is None:
@@ -335,15 +352,20 @@ def parse_gpx(path):
     name = name_overrides().get(os.path.basename(path), stem)
     desc = gpx_ext.get("description") or ""
     tags = [t for t in re.split(r"[,，、\s]+", gpx_ext.get("TrackTags", "")) if t]
-    # 区域归属，三步走，越靠前越可信：
+    # 区域归属，四步走，越靠前越可信：
+    # ⓪ tools/data/route-regions.json 里人工核过的例外（起点在金华市界外，算法认不出）
     # ① PosStartName 里明确含且仅含一个县名 —— 那是上传者自己写的，最可信
     #    （注意它是自由文本：「金华市义乌市上溪镇五星社村岩下村1号」这种也要能认出来，
     #      所以用「包含」而不是整串相等）
     # ② 拿轨迹起点做行政边界内判定（真实多边形，WGS→GCJ 后再判）
     # ③ 都失败才退回「离县城中心最近」，并明确标注是近似
     region, region_source = None, None
+    ov = region_overrides().get(os.path.basename(path))
+    if ov:
+        # ⓪ 人工核过的例外（起点在金华市界外、算法会认错的那种）：先在表里查
+        region, region_source = ov["region"], ov.get("region_source") or "区域例外表"
     ps = gpx_ext.get("PosStartName") or ""
-    hits = [c for c in COUNTY_CENTERS if c in ps]
+    hits = [c for c in COUNTY_CENTERS if c in ps] if region is None else []
     if len(hits) == 1:
         region, region_source = hits[0], "两步路 PosStartName"
     if region is None:

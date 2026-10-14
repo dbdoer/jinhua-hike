@@ -1,7 +1,7 @@
 {
  "note": "gpx/ 里原始 GPX 文件的字节指纹。任何一项对不上，都意味着「下载原始 GPX」给出去的已经不是上传者导出的那串字节。.gitattributes 里 *.gpx 标了 -text，禁止 git 做行尾转换 —— 别去掉它。用 python tools/check_gpx_manifest.py 校验。",
  "algorithm": "sha256",
- "count": 64,
+ "count": 66,
  "files": [
   {
    "file": "三县第一潭三瀑.gpx",
@@ -58,6 +58,13 @@
    "sha256": "af56ab6686abd9a1afb79786d4875f2ef4d421e52778cc25e00a101ce39d79a5",
    "track_id": "89863284",
    "name": "九峰山环线"
+  },
+  {
+   "file": "仙居饭蒸岩.gpx",
+   "bytes": 235996,
+   "sha256": "e88f5d3476daed54a0354b38df330d630d806cb179dd1ff66b3829034a605e77",
+   "track_id": "91360937",
+   "name": "仙居饭蒸岩"
   },
   {
    "file": "仰天垄260527.gpx",
@@ -296,6 +303,13 @@
    "sha256": "f1e3808bf8b7bc16d5cc25e43a906746d1acf049e87771aa57c6fe9a01f2ceab",
    "track_id": "78007335",
    "name": "浦江通济湖260118"
+  },
+  {
+   "file": "浦江龙门瀑布犀牛尖.gpx",
+   "bytes": 189808,
+   "sha256": "3055ccae62714121e64c77961d23a9a6fc6161543d8204ebfb293b9b0b7a4bbb",
+   "track_id": "90805439",
+   "name": "浦江龙门瀑布犀牛尖"
   },
   {
    "file": "灶头大盘尖260121.gpx",
