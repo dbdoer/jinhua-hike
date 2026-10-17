@@ -57,6 +57,8 @@ jinhua-hike/
 │   ├── index.html      入口页（线上是 /spots/，body 上挂 theme-spots）
 │   ├── spots.json      一个点一条，坐标手标（照 gpx/ 的地位：源在库里、产物在 data/）
 │   └── photos/         自己拍的照片（WebP，宽 1200）
+├── yunhai/             云海参考：**内容页，不是地图主题**（见「三个入口页」）
+│   └── index.html      入口页（线上是 /yunhai/，自己一套 <style>，不加载 app.js）
 ├── tools/              构建与自查脚本（Python 3；只有 prep_photos.py 用到 Pillow）
 │   ├── build_routes.py
 │   ├── build_spots.py
@@ -70,7 +72,7 @@ jinhua-hike/
 └── shots/              自测截图（不进版本库）
 ```
 
-## 两个入口页（主题）
+## 三个入口页
 
 一个仓、一套壳、多个入口页。**没有框架，也没有第二份逻辑** —— 主题就是 `<body>` 上
 一个 class，`app.js` 只读它、不猜：
@@ -85,6 +87,20 @@ const THEME = document.body.classList.contains('theme-spots') ? 'spots' : 'hike'
 |---|---|---|---|
 | 徒步路线 | `/` | 无 class（默认） | 66 条两步路轨迹 + 全套筛选（点线同屏） |
 | 打卡点 | `/spots/` | `theme-spots` | 只有点位，一条路线也不放 |
+| 云海参考 | `/yunhai/` | **不参与主题机制** | 一张内容页：判据 + 观景点 + 什么时候去 |
+
+**第三个入口和上面两个不是一类东西，别把它做成 `theme-yunhai`。**
+`/spots/` 是同一套地图壳换一份数据（所以它们共用一个 `#map` / `#panel` / `app.js`）；
+`/yunhai/` 里没有地图、没有面板、没有筛选，它是一篇**读的东西**。
+硬塞进主题机制，就等于让 `app.js` 去伺候一个既没有 `#map` 也没有 `#panel` 的页面
+—— 那才是真的错主题。所以它自己一套 `<style>`、自己那 4 行填数量的脚本、不加载 `app.js`。
+（附带一条必须做的补救：`style.css` 里 `body{overflow:hidden}`、`.bar{position:absolute}`
+是全屏地图的规矩，内容页照搬过来就是一条**滑不动**的页面。`/yunhai/` 里用
+`body.theme-yunhai` 那两条把 `overflow` 和 `.bar` 改回文档流，别删。）
+
+**三个入口是同一套世界观**（都切「站上有哪些专题」、都是跳转而不是开关），
+所以第三个可以直接排在 `.entries` 里；`flex-wrap:wrap` 是给窄屏兜底的
+（390px 一行塞得下，360px 往下掉一行，而不是横向顶出去）。
 
 `/spots/` 与首页的差别只有三处：
 
@@ -98,12 +114,12 @@ const THEME = document.body.classList.contains('theme-spots') ? 'spots' : 'hike'
    `geomReady` 放行、开场镜头 `fitAllSpots()`。最后那个是**必须**的：
    `geomReady` 初值看 `window.HIKE_GEOM` 在不在，这一页不加载几何，不特判就永远
    等不到，`bootMap()` 卡在门口、地图根本建不起来。
-3. **CSS** —— 只多了一条 `.entries`（左下角两个入口）。入口之间是**跳转**不是开关，
+3. **CSS** —— 只多了一条 `.entries`（左下角那排入口）。入口之间是**跳转**不是开关，
    所以没有反白态那种东西。
 
-### 两个入口上的数量
+### 入口上的数量
 
-左下角那两个入口（徒步路线 / 打卡点）**不写死数字**，由 `app.js` 按数据填：
+`app.js` 会给前两个入口填数量（徒步路线 / 打卡点），**不写死**：
 
 ```js
 if (entryCntHike && routes.length) entryCntHike.textContent = routes.length;
@@ -113,7 +129,11 @@ if (entryCntSpot && spots.length) entryCntSpot.textContent = spots.length;
 写死的数字一定会撒谎 —— 上线那天写着 4，第二天点位加到 6，页面上还挂着 4。
 这就是 `/spots/` 要加载 `routes.index.js` 的唯一理由：10KB 换一个不说谎的数字，划算。
 
-**「点位」那个复选框已下架**（2026-09-26）。它和这两个入口长得像、做的事却不同
+**「云海参考」那个入口没有数量**，因为它不是「有多少条」那种东西 —— 它是一篇说明。
+`/yunhai/` 上照样给前两个入口填数（本页自己那 4 行脚本读 `window.HIKE_INDEX` /
+`window.SPOT_DATA`，同样不写死）。
+
+**「点位」那个复选框已下架**（2026-09-26）。它和那排入口长得像、做的事却不同
 （一个切列表、一个开关图层），并排摆着没人分得清；而且窄屏下 `.map-tools` 整块是
 `display:none`，手机上本来就够不到它。现在**地图上点线永远同屏** —— 入口切的只是
 「面板看谁」。`state.spotsOn` 恒为 `true`，字段留着：将来真要做「隐藏点位」时还在。
@@ -138,7 +158,9 @@ if (entryCntSpot && spots.length) entryCntSpot.textContent = spots.length;
 
 ### 别急着抽主题框架
 
-**两个例子抽不出共性。** 等玩水 / 赏秋真做出来再回头看哪儿该抽象 —— 它们跟打卡点
+**三个例子还是抽不出共性 —— 而且第三个暴露了「入口页」这个词本身有歧义。**
+前两个是同一套地图壳换数据（那部分真该抽），第三个是一张内容页（根本不该进这套机制）。
+硬要抽就只剩前两个，「抽两个」等于没抽。等玩水 / 赏秋真做出来再回头看 —— 它们跟打卡点
 共用 `spots/` 这份源数据，入口页各自的目录另开。（`/spots/` 既是入口页又是源数据
 目录只是命名撞车，别把 `spots.json` 挪走。）
 
@@ -203,8 +225,8 @@ python tools/build_routes.py --src gpx  # 指定来源目录
 | `family` | 距离 ≤8km 且 爬升 ≤400m 且（用时未知 或 ≤5h）→ `true`，否则 `null` |
 | `family_reason` | 规则文本；不满足则 `null` |
 | `family_tag` | 描述 / 标注点 / 标签里出现「亲子·家庭·儿童·遛娃」→ `true`，否则 `null` |
-| `has_water` | 同一段文本里出现「瀑布·溪·涧·水潭·深潭·水源·涉水」→ `true`，否则 `null` |
-| `water_reason` | 命中的关键词 |
+| `has_water` | **三态**（2026-10-17 改）：命中「瀑布·溪·涧·水潭·深潭·水源·涉水」→ `true`；**有文字可看**（描述或标注点非空）但没命中 → `false`；描述和标注点都空 → `null`。理由见下 |
+| `water_reason` | 命中的关键词（只有 `true` 时才有） |
 | `distance_km` | 相邻 trkpt 的大圆距离累加（R = 6371.0088 km），保留 2 位 |
 | `ascent_m` / `descent_m` | 累计爬升/下降，**3 m 滞回阈值**滤掉 GPS 高程抖动 |
 | `ele_min` / `ele_max` | 所有 trkpt 高程的最小/最大值 |
@@ -247,8 +269,31 @@ python tools/build_routes.py --src gpx  # 指定来源目录
 | 困难 | 距离 > 15 km 或爬升 > 900 m | 红 `#b91c1c` |
 
 **亲子 / 涉水**两条都是布尔标记，数据不足时给 `null`（未知），不硬猜：
-亲子可以来自系统判定（距离/爬升/用时）也可以来自文本关键词；
-涉水只认文本关键词，认不出来就是未知。
+亲子可以来自系统判定（距离/爬升/用时）也可以来自文本关键词。
+
+**涉水是三态，不是一个 null 糊过去**（2026-10-17 修；原先是 `true` / `null` 两态）：
+
+| 值 | 含义 | 条数 |
+|---|---|---|
+| `true` | 描述 / 标注点 / 标签里命中了涉水关键词 | 32 |
+| `false` | **有文字可看**（描述或标注点非空），但里面没提到水 | 27 |
+| `null` | 描述和标注点**都空** —— 真的无从判断 | 7 |
+
+天条有三条，改这处之前先读：
+
+1. **`false` 不等于「现场没有水」。** 上传者没写，山上的瀑布不会自己消失。
+   所以详情页那句话写的是「**没提到**」，不是「没有」——
+   `app.js` 的 `waterRow()` 里三个分支的文案都是有意的，别改成一句「无涉水」。
+2. **判断「有没有文字可看」时不能算上 `tags`。** tags 里是「徒步 / 爬山 / 外部导入」
+   这类分类词，条条都有几个；拿它当依据，`false` 和 `null` 就永远分不开
+   （34 个 `null` 会全部变成 `false`，等于没修）。检索面（含 tags）和可判断性
+   （不含 tags）是**两个字符串**，`tools/build_routes.py` 和 `app.js` 的
+   `parseGpxText` 必须用同一套口径 —— 这两处不同步是这条的老毛病。
+3. **检索面那个 `blob` 不许动。** 动了已有条目会整批翻面；改之前先跑一遍
+   「原 `true` 的有没有被翻掉」，必须为空。
+
+`app.js` 里那条筛选（`r.has_water !== true` 就排除）**不改** —— 「涉水 / 瀑布」
+这个开关要的就是「确定有水」，把 `false` / `null` 一起放进来反而是错的。
 
 ### 海拔剖面为什么不单独存
 
@@ -268,6 +313,28 @@ python tools/build_routes.py --src gpx  # 指定来源目录
 没有 trkpt 时回退用 rtept，其余口径（距离 / 爬升 / 难度 / 剖面）完全一致，
 但 `geometry_from` 会记成 `rte` 以示区别。另外「路线」类文件里 `TimeUsed` / `PauseTime`
 都是 0，**不能当成功耗时**，否则用时显示成 `0 h`。
+
+## 详情页上的导航入口（「怎么去」那排按钮）
+
+起点坐标转成 GCJ-02 后给两个地图入口。有一处 2026-10-17 的改动别改回去：
+
+| 按钮 | 桌面 | 手机 |
+|---|---|---|
+| 高德导航到起点 | ✅ 落**路径规划页**（能输起点，桌面照样有用） | ✅ 靠 `data-app` 调起高德 App |
+| 百度地图打开起点 | **不渲染** | ✅ 调起百度 App，进 App 点一下「导航」 |
+
+**桌面上的百度那条撤掉了。** 理由：`api.map.baidu.com/marker` 只会**标个点**，
+而百度网页端的路径规划要 `origin` 给地名或坐标、**没有「我的位置」**
+（实测 `origin=我的位置` 被丢进搜索页）—— 它给不出「从当前位置过去」，
+摆在那儿就是个名不副实的入口。高德反过来，网页版直接落路径规划页，所以它两边都留。
+
+两个别忘的实现细节：
+
+1. `nav` 那一组是用 `nav.join('')` 拼的 —— 百度那条在桌面上求值成 `null`，
+   **不 `.filter(Boolean)`，页面上就会多出一个孤零零的「null」**。
+2. 链接里的坐标用的是构建期转好的 `nav_gcj`，不是 `start`。`api.map.baidu.com/marker`
+   按 GCJ-02 理解坐标，喂 WGS-84 会原样透传、落点偏约 560 m；老数据没这字段时退回
+   `start`，至少不会拼出一个 `undefined` 的链接。
 
 ## 自查脚本
 
@@ -461,7 +528,7 @@ python tools/build_spots.py --check-only  # 只看校验结果
 python tools/prep_photos.py --prefix shuanglong 原图1.jpg 原图2.jpg
 # 3. 往 spots/spots.json 里加一条（region 别拍脑袋：county_of(lon,lat) 算，顺手量离县界的距离）
 # 4. python tools/build_spots.py     # 校验通过才生成 data/spots.js
-# 5. 本地 serve.bat 看一眼（首页 + /spots/ 两个入口都要看），提交并推上线
+# 5. 本地 serve.bat 看一眼（首页 + /spots/ + /yunhai/ 三页都要看），提交并推上线
 ```
 
 ## 新增一条路线

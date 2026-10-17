@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>金华人怎么看云海 · 观云参考</title>
+<meta name="description" content="金华北山一带的观云参考：云海判据（六因子）、几个自己手标的观景点、什么时候去。这是一份经验说明，不是气象预报。">
+<!-- 分享卡片。跟 /spots/ 同一个道理：这是一条**真实存在的路径**，
+     微信爬虫拿到 200，卡片能一页一个样。 -->
+<meta property="og:type" content="article">
+<meta property="og:title" content="金华人怎么看云海 · 观云参考">
+<meta property="og:description" content="云海判据（六因子）、几个自己手标的观景点、什么时候去。这是一份经验说明，不是气象预报。">
+<meta property="og:url" content="https://ijinhua.com/yunhai/">
+<link rel="icon" href="../favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<meta name="theme-color" content="#0f172a">
+<link rel="stylesheet" href="../style.css">
+<link rel="dns-prefetch" href="https://hm.baidu.com">
+
+<!-- 百度统计：与首页同一套（延迟注入，不抢首屏带宽）。入口页能分出来，
+     所以从后台看得到「云海」这个栏目进了多少人。 -->
+<script>
+window._hmt = window._hmt || [];
+(function () {
+  var HMT_SRC = 'https://hm.baidu.com/hm.js?43c11e72955fe0c3db679ca40c371952';
+  var injected = false;
+  function inject() {
+    if (injected) return;
+    injected = true;
+    var hm = document.createElement('script');
+    hm.src = HMT_SRC;
+    hm.async = true;
+    document.head.appendChild(hm);
+  }
+  if (window.addEventListener) {
+    window.addEventListener('load', function () {
+      if ('requestIdleCallback' in window) requestIdleCallback(inject, { timeout: 2000 });
+      else setTimeout(inject, 200);
+    });
+  } else {
+    setTimeout(inject, 3000);
+  }
+})();
+</script>
+
+<!-- 这一页是**内容页**，不是地图页：不加载 maplibre、不加载 app.js、没有几何。
+     所以它必须把 style.css 里那几条「给全屏地图用」的规矩改回来 ——
+     body 是 overflow:hidden，.bar 是 absolute，照搬过来就是一条不动的页面。 -->
+<style>
+body.theme-yunhai{overflow:auto;height:auto;min-height:100%;background:#f8fafc}
+body.theme-yunhai .bar{position:static;margin:12px 12px 0;padding:12px 14px}
+body.theme-yunhai .brand{margin-bottom:0;font-size:16px}
+/* 三个入口在这页照旧排在筛选条下面，但没有地图垫着它们，所以走文档流。
+   flex-wrap 是为了 360px 那种窄屏 —— 三个胶囊一行塞不下时往下掉一行，
+   而不是横向顶出去。 */
+.entries-static{display:flex;flex-wrap:wrap;gap:8px;margin:12px}
+.wrap{max-width:760px;margin:0 auto;padding:8px 16px 40px}
+.wrap h1{font-size:26px;line-height:1.35;margin:18px 0 6px;letter-spacing:.5px}
+.wrap .lead{color:var(--ink2);font-size:15px;margin:0 0 18px}
+.wrap h2{font-size:17px;margin:34px 0 10px;padding-bottom:7px;border-bottom:1px solid var(--line)}
+.wrap h3{font-size:14.5px;margin:20px 0 8px}
+.wrap p{margin:10px 0;color:var(--ink2)}
+.wrap b{color:var(--ink)}
+.wrap ul{margin:10px 0;padding-left:20px;color:var(--ink2)}
+.wrap li{margin:5px 0}
+.wrap code{background:#eef2f7;border-radius:5px;padding:1px 5px;font-size:12.5px}
+
+/* 口径声明。这一块是全页最要紧的一段 —— 排在正文第一屏，不做折叠、不做灰色小字。
+   《气象法》第二十二条把公众气象预报定成统一发布制度，别的组织和个人不得向社会发布；
+   2026-07 那批「AI 发台风预报」的报道里，被点名的博主还是**收费**预测的。
+   所以这一页从头到尾不出现「预报」二字指自己，也不带任何收费的口子。 */
+.notice{background:#fffbeb;border:1px solid #fde68a;border-left:4px solid var(--amber);
+  border-radius:10px;padding:14px 16px;margin:0 0 8px}
+.notice h3{margin:0 0 8px;font-size:14px;color:#92400e}
+.notice ul{margin:0;padding-left:20px;color:#78350f;font-size:13.5px}
+.notice li{margin:5px 0}
+
+.wrap table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.5px}
+.wrap th,.wrap td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+.wrap th{background:#f1f5f9;font-weight:600;font-size:12.5px;color:var(--ink2);letter-spacing:.03em}
+.wrap td{color:var(--ink2)}
+.wrap td b{color:var(--ink)}
+.wrap tbody tr:nth-child(even){background:#fbfcfe}
+.num{white-space:nowrap;font-variant-numeric:tabular-nums}
+.mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12.5px;white-space:nowrap}
+
+.wrap footer{margin-top:36px;padding-top:16px;border-top:1px solid var(--line);
+  color:var(--ink3);font-size:12.5px}
+.wrap footer a{color:var(--ink2)}
+@media (max-width:560px){
+  .wrap h1{font-size:22px}
+  .wrap table{font-size:12.5px}
+  .wrap th,.wrap td{padding:6px 7px}
+}
+</style>
+</head>
+
+<body class="theme-yunhai">
+
+<header class="bar" id="bar">
+  <div class="brand">
+    <span class="dot"></span>
+    <b>金华山地参考</b>
+    <span class="sub">云海 · 观云经验说明</span>
+  </div>
+</header>
+
+<!-- 三个入口，跟另外两页同一套。这一页是「云海参考」的落地页，所以它带 .on。
+     数量由本页底部那 4 行脚本按真实数据填 —— 写死一个数字迟早撒谎。 -->
+<nav class="entries-static">
+  <a class="entry" href="../"><span class="ic"></span>徒步路线<span class="n" id="entry-cnt-hike"></span></a>
+  <a class="entry" href="../spots/"><span class="ic"></span>打卡点<span class="n" id="entry-cnt-spot"></span></a>
+  <a class="entry on" href="./"><span class="ic"></span>云海参考</a>
+</nav>
+
+<main class="wrap">
+
+  <h1>金华人怎么看云海</h1>
+  <p class="lead">一份经验说明。讲清判据是什么、点在哪、什么时候去 —— 不是气象预报。</p>
+
+  <div class="notice">
+    <h3>先说清楚这是什么，不是什么</h3>
+    <ul>
+      <li><b>本站不发布气象预报。</b>天气预报警报由气象部门统一发布（《气象法》第二十二条），我们不参与这件事，也没有任何收费的天气预测。</li>
+      <li>这里写的，是<b>「什么样的天气容易出云海」的一般经验</b>，加上几个站主本人手标的观景点。</li>
+      <li>用到的原始天气数据来自 <b>Open-Meteo</b> 的公开模式数据 —— 我们只是拿它跟观景点的海拔比一比，看你在云上还是云里。</li>
+      <li><b>进山请以气象部门发布的预报为准</b>，并以现场情况为准。这一页给你的是判断方法，不是结论。</li>
+    </ul>
+  </div>
+
+  <h2>云海不是「云多」</h2>
+  <p>很多人以为云海是天上云多。不是。</p>
+  <p>云海是<b>你站在云上面</b>。山谷里积着一层云，观景点在云顶之上，云被一层暖空气压着不动 —— 底下那层云看上去才像海。所以判据里最重的一条不是云量，是<b>你的位置</b>：位置不对，别的因子再漂亮也白搭。你站在大雾里，一百样条件都理想，看见的也还是白茫茫一片。</p>
+  <p>还有一条容易被略过：<b>云得有人压着。</b>夜里地面降温、上层偏暖，就形成逆温层；它像一只盖子扣在山谷上，云动不了。没有这只盖子，云是会被风吹散的。</p>
+
+  <h2>判据：六个因子</h2>
+  <p>把上面两句话拆开，就是六个因子，加权满 100 分。「云层位置」占了三成，其余五条围着它补细节。</p>
+  <table>
+    <thead>
+      <tr><th style="width:92px">因子</th><th style="width:52px">权重</th><th>它在问什么</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><b>云层位置</b></td><td class="num">30</td>
+        <td>你在云顶之上吗。只有「在云上」才算数。<b>泡在云里、云还在天上、剖面里压根没云</b>这三种，直接给总分压上限（12 / 25 / 30 分）—— 别的因子再好也翻不了身。这条是硬否决，不是扣分。</td>
+      </tr>
+      <tr>
+        <td><b>逆温强度</b></td><td class="num">20</td>
+        <td>温度随高度上升超过 <b>0.5 ℃ / 100 m</b> 就算有逆温。逆温层就是那只盖子，它决定云海能不能安静地待着。</td>
+      </tr>
+      <tr>
+        <td><b>云层厚度</b></td><td class="num">15</td>
+        <td>薄薄一层是纱，厚厚一层才是海。云太薄铺不满山谷。</td>
+      </tr>
+      <tr>
+        <td><b>通透度</b></td><td class="num">15</td>
+        <td>露点差（气温离露点多远）和能见度。观景点自己泡在雾里 —— 露点差不到 <b>1 ℃</b> —— 就没戏，那不是云海，那是你进了云。</td>
+      </tr>
+      <tr>
+        <td><b>风</b></td><td class="num">10</td>
+        <td><b>1 m/s 以下太静</b>（雾散不掉），6 m/s 以内最好，<b>12 m/s 以上作废</b>（云被推走、人也站不稳）。</td>
+      </tr>
+      <tr>
+        <td><b>降水</b></td><td class="num">10</td>
+        <td>前 <b>48 小时累计 2–30 mm</b> 最好：雨洗过空气、山谷里存住了水汽。正在下雨（> 0.2 mm/h）不行，那时候你在山上是受罪，不是看海。</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>最后会得到一个 0–100 的指数。「很高 / 较高 / 中等 / 较低 / 很低」五档。有一件事得说在明面上：<b>这个指数是经验评分，不是概率</b>。它不是「多少次里能中一次」，是「这套判据觉得这个条件像不像」。要说概率得拿历史实况回来做校准 —— 那是一件还没做的事。</p>
+
+  <h2>金华的观景点</h2>
+  <p>下面这些点是<b>站主本人在卫星影像上一个一个手标的</b>，不是程序挑的。海拔来源也逐一标出来（自己核的 / OSM 测绘 / DEM 估）。</p>
+  <table>
+    <thead>
+      <tr><th>观景点</th><th style="width:86px">海拔</th><th style="width:74px">海拔来源</th><th>坐标 WGS-84（纬度, 经度）</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><b>北山大盘尖</b><br><span style="font-size:12.5px">北山主峰。云海看东南面，日出前到</span></td>
+        <td class="num">1312 m</td><td>OSM</td>
+        <td class="mono">29.233554, 119.661921</td>
+      </tr>
+      <tr>
+        <td><b>北山观景台</b><br><span style="font-size:12.5px">距北山大盘尖 3.47 km，海拔差约 500 m</span></td>
+        <td class="num">808.62 m</td><td>自测</td>
+        <td class="mono">29.207696, 119.641995</td>
+      </tr>
+      <tr>
+        <td><b>斗鸡岩</b><br><span style="font-size:12.5px">浦江县</span></td>
+        <td class="num">484.41 m</td><td>自测</td>
+        <td class="mono">29.537971, 119.851945</td>
+      </tr>
+      <tr>
+        <td><b>屋背坑</b><br><span style="font-size:12.5px">武义县</span></td>
+        <td class="num">584.9 m</td><td>自测</td>
+        <td class="mono">28.710293, 119.724993</td>
+      </tr>
+      <tr>
+        <td><b>四顾屏</b><br><span style="font-size:12.5px">观景台（不是峰顶），婺城区安地镇</span></td>
+        <td class="num">389 m</td><td>自测</td>
+        <td class="mono">28.973764, 119.614261</td>
+      </tr>
+    </tbody>
+  </table>
+  <p><b>坐标是 WGS-84</b>，跟 GPS、Google Earth 卫星影像同一套，可以直接粘。但<b>高德是 GCJ-02、百度是 BD-09</b>，直接粘进这两家会偏几十到几百米 —— 别偷这个懒。站上每条徒步路线的详情页里都带了转好的坐标，那几个链接可以直接用。</p>
+
+  <h2>什么时候去</h2>
+  <p>看判据就知道答案了，用不着另做一套统计：</p>
+  <ul>
+    <li><b>雨后转晴的夜晚之后、日出前后。</b>前 48 小时下过 2–30 mm 的雨（山谷存住水汽），夜里放晴（地面辐射降温，逆温层成形），清晨那一段最容易出分。</li>
+    <li><b>秋冬的晴夜。</b>辐射降温强、逆温层更典型 —— 这是常识性的经验，不是本站做出来的统计结论（我们没做过历史回测，别把这条当成数据）。</li>
+    <li><b>清晨，不是中午。</b>逐日结果只看 04:00–09:00 这个窗口。云海是清晨的事，拿中午的高分顶替清晨是自欺欺人 —— 中午那点分数再好看，你看到的也只是晒化的雾。</li>
+  </ul>
+
+  <h2>每天的参考在哪看</h2>
+  <p>这套判据逐日算出来的结果，发在账号<b>「俯瞰金华」</b>（抖音 / 视频号同名）。</p>
+  <p>这一页是常设的说明 —— <b>数字每天变，说明不太变</b>。所以放在站上：你哪天想起来「明天有没有」，不用翻旧视频，回这一页看看判据和点位就够了；想知道逐日的数，去账号那边。</p>
+
+  <h2>进山之前</h2>
+  <ul>
+    <li><b>多数时候是摸黑上山。</b>要赶日出前到，就意味着天没亮就出发 —— 头灯、保暖、防滑是必需品，不是可选项。</li>
+    <li><b>起雾就是「你在云里」。</b>云海和大雾是同一件事的两面，一翻脸能见度就掉到几米。雾起来的时候先顾安全，别顾着拍。</li>
+    <li><b>山顶比城里冷得多。</b>北山一带冬天路面可能结冰，山上和山下的体感是两个季节。</li>
+    <li><b>告诉人你去哪、几点回。</b>一个人也照做。</li>
+  </ul>
+
+  <h2>数据与口径</h2>
+  <ul>
+    <li><b>原始天气数据</b>：Open-Meteo 公开模式数据。</li>
+    <li><b>分辨率</b>：模式网格约 <b>25 km</b>，气压层只有 <b>10 层</b>（相邻层能差约 1000 m）。一座山在模式里就那么几个格点 —— 这是数据本来的颗粒度，不是偷懒，换接口也治不好。</li>
+    <li><b>指数是经验评分</b>，不是概率，也不是历史频率。</li>
+    <li><b>观景点坐标由站主实地手标</b>，海拔来源逐一标注。机器只做校验（拿 OSM 山头和 DEM 各比一次），<b>只报差异、不改人的数</b> —— 人在地图上标的坐标是权威，DEM 自己会错，峰顶上系统性偏低几十米是常事。</li>
+    <li><b>本站不发布气象预报。</b>气象预报警报由气象部门统一发布，进山请以官方预报和现场情况为准。</li>
+  </ul>
+
+  <footer>
+    金华山地参考 · 坐标与经验来自站主本人实地打点<br>
+    有异议、要补点、或要撤下，请邮件
+    <a href="mailto:ijinhua2026@163.com?subject=%E9%87%91%E5%8D%8E%E5%B1%B1%E5%9C%B0%E5%8F%82%E8%80%83%EF%BC%9A%E4%BA%91%E6%B5%B7%E6%A0%8F%E7%9B%AE">ijinhua2026@163.com</a>
+  </footer>
+
+</main>
+
+<!-- 只取数量，不加载 app.js / 几何。左下角那三个入口上的数字得是真的，
+   写死迟早撒谎（同 /spots/ 的理由）。 -->
+<script src="../data/routes.index.js"></script>
+<script src="../data/spots.js"></script>
+<script>
+(function () {
+  var a = document.getElementById('entry-cnt-hike');
+  if (a && window.HIKE_INDEX && window.HIKE_INDEX.routes) a.textContent = window.HIKE_INDEX.routes.length;
+  var b = document.getElementById('entry-cnt-spot');
+  if (b && window.SPOT_DATA && window.SPOT_DATA.spots) b.textContent = window.SPOT_DATA.spots.length;
+})();
+</script>
+
+</body>
+</html>

@@ -854,6 +854,18 @@ function navRow(k, v) {
   return v || v === 0 ? `<div class="kv"><span>${k}</span><span>${v}</span></div>` : '';
 }
 
+/* 涉水是三态，别用一个词糊过去（2026-10-17 体检发现 F-01 的修法）：
+     true  = 描述或标注点里命中了涉水关键词
+     false = **有文字可看**（描述或标注点非空），但里面没提到水
+     null  = 描述和标注点都空 —— 真的无从判断
+   false 那句必须写「没提到」，不能写「没有」：上传者没写，山上的瀑布不会自己消失。
+   与之相对，null 是「这条轨迹连文字都没有」，跟「看了文字没找到」是两回事。 */
+function waterRow(r) {
+  if (r.has_water === true) return esc(r.water_reason || '轨迹描述或标注点提到涉水关键词');
+  if (r.has_water === false) return '描述与标注点里都没提到涉水 —— 是「没提到」，不等于现场没有';
+  return '这条轨迹既无文字描述、也无标注点，无从判断';
+}
+
 function renderDetail(r) {
   const s = r.source || {};
   const anno = r.annotations || [];
@@ -879,11 +891,18 @@ function renderDetail(r) {
     // 坐标取构建期转好的 nav_gcj：这个接口按 GCJ-02 理解坐标，给 WGS-84 会原样透传、
     // 落点偏约 560 m。老数据没这字段时退回 start，至少不会拼出个 undefined 的链接。
     `<a href="${amapWeb}"${amapApp ? ` data-app="${esc(amapApp)}"` : ''} target="_blank" rel="noopener">高德导航到起点</a>`,
-    `<a href="${bmapWeb}"${bmapApp ? ` data-app="${esc(bmapApp)}"` : ''} target="_blank" rel="noopener">百度地图打开起点</a>`,
+    // 百度那条**只在触摸设备出现**。它唯一有用的形态是「调起 app → 在 app 里点一下导航」；
+    // 桌面上的 api.map.baidu.com/marker 只能标个点，而百度网页端的路径规划要 origin 给地名
+    // 或坐标、没有「我的位置」（实测 origin=我的位置 被丢进搜索页），给不出「从当前位置过去」。
+    // 摆在那儿就是个名不副实的入口 —— 那是这一版要撤掉的东西。
+    // 高德反过来：网页版直接落路径规划页，桌面照样能用，所以它两边都留。
+    bmapApp ? `<a href="${bmapWeb}" data-app="${esc(bmapApp)}" target="_blank" rel="noopener">百度地图打开起点</a>` : null,
     `<button data-copy="${r.start.lat},${r.start.lon}">复制 WGS-84 坐标</button>`,
     `<button data-locate="${r.id}">地图上定位起点</button>`,
     `<button data-share="1">分享链接</button>`,
-  ];
+  ].filter(Boolean);
+  // filter(Boolean)：上面百度那条在桌面上求值成 null，而这一组是用 nav.join('') 拼的 ——
+  // 不滤掉的话，页面上会多出一个孤零零的「null」。
   // 「下载原始 GPX」按钮已移除：原始 GPX 是两步路用户上传的作品，本站只做整理展示，
   // 主动分发文件是越界的那一步 —— 是否分发是上传者的处置权，不是本站的。别加回来。
 
@@ -966,7 +985,7 @@ function renderDetail(r) {
     ${navRow('轨迹录制日期', exported || '—')}
     ${navRow('难度判定依据', esc(r.difficulty_reason || '—'))}
     ${navRow('亲子判定依据', r.family === true ? esc(r.family_reason || '—') : '未判定为亲子')}
-    ${navRow('涉水判定依据', r.has_water === true ? esc(r.water_reason || '—') : '未识别到涉水关键词')}
+    ${navRow('涉水判定依据', waterRow(r))}
     ${navRow('爬升估算口径', '3 m 滞回阈值滤 GPS 高程抖动，仍属估算')}
 
     <p class="tid-hint">这条轨迹的原始 GPX 在两步路 App 里：首页 →「轨迹」→ 搜索栏搜这条路线的名字
@@ -1603,8 +1622,15 @@ function parseGpxText(text, filename) {
   const region = psHits.length === 1 ? psHits[0] : null;
   const distKm = +dist.toFixed(2), ascM = Math.round(asc);
   const difficulty = (distKm <= 8 && ascM <= 400) ? '休闲' : (distKm <= 15 && ascM <= 900) ? '中等' : '困难';
-  const blob = desc + ' ' + wpts.map(w => w.name).join(' ') + ' ' + tags.join(' ');
-  const water = ['瀑布', '溪', '涧', '水潭', '深潭', '水源', '涉水'].some(k => blob.includes(k));
+  // 与 tools/build_routes.py 同口径（两处口径不一致是这条的老毛病）：
+  //   检索面 blob = 描述 + 标注点(名+描述) + tags   —— 含 tags
+  //   可判断性 judgeable = 描述 + 标注点(名+描述)    —— **不含 tags**
+  // tags 里是「徒步 / 爬山 / 外部导入」这类分类词，条条都有几个，拿它当「有文字可看」
+  // 的依据等于没有依据，false/null 就永远分不开。
+  const WKEYS = ['瀑布', '溪', '涧', '水潭', '深潭', '水源', '涉水'];
+  const blob = desc + ' ' + wpts.map(w => w.name + w.desc).join(' ') + ' ' + tags.join(' ');
+  const judgeable = (desc + ' ' + wpts.map(w => w.name + ' ' + w.desc).join(' ')).trim();
+  const water = WKEYS.some(k => blob.includes(k));
 
   // 抽稀（约 4m 容差）。坐标必须写成 [lon,lat,ele] 三元组 —— 海拔要在几何里，
   // 否则前端画不出剖面（这里原先只存了 [lon,lat]，与 build_routes.py 口径不一致）。
@@ -1628,7 +1654,8 @@ function parseGpxText(text, filename) {
     difficulty, difficulty_reason: difficulty === '休闲' ? '≤8km 且爬升≤400m' : difficulty === '中等' ? '≤15km 且爬升≤900m' : '距离>15km 或爬升>900m',
     family: (distKm <= 8 && ascM <= 400 && (hours == null || hours <= 5)) ? true : null,
     family_reason: '距离≤8km、爬升≤400m、用时≤5h（系统判定）',
-    has_water: water ? true : null, water_reason: water ? '描述或标注点含涉水关键词' : null,
+    has_water: water ? true : (judgeable ? false : null),
+    water_reason: water ? '轨迹描述或标注点提到：' + WKEYS.filter(k => blob.includes(k)).join('、') : null,
     distance_km: distKm, ascent_m: ascM, descent_m: Math.round(des),
     ele_min: eles.length ? Math.round(Math.min(...eles)) : null,
     ele_max: eles.length ? Math.round(Math.max(...eles)) : null,

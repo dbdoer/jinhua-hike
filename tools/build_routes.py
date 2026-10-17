@@ -392,8 +392,24 @@ def parse_gpx(path):
     family_hi = (dist_km <= 8 and asc_m <= 400 and (hours is None or hours <= 5))
     family = True if family_hi else None
 
+    # 涉水是三态，别用一个 null 糊过去：
+    #   True  = 描述或标注点里命中了涉水关键词
+    #   False = **有文字可看**（描述或标注点非空），但里面没提到水
+    #   None  = 描述和标注点都空 —— 真的无从判断
+    # 为什么 False 不等于「现场没有水」：上传者没写，山上的瀑布也不会自己消失。
+    # 所以 UI 必须写成「没提到」，不能写成「没有」。
+    #
+    # blob 是关键词检索面（含 tags）—— **这一串不许动**，动了已有条目会整批翻面。
     blob = desc + " " + " ".join(w["name"] + w["desc"] for w in wpts) + " " + " ".join(tags)
-    has_water = True if any(k in blob for k in WATER_KEYS) else None
+    # judgeable 不含 tags：tags 里是「徒步 / 爬山 / 外部导入」这类分类词，几乎条条都有，
+    # 拿它当「有文字可看」的依据等于没有依据。
+    judgeable = (desc + " " + " ".join(w["name"] + " " + w["desc"] for w in wpts)).strip()
+    if any(k in blob for k in WATER_KEYS):
+        has_water = True
+    elif judgeable:
+        has_water = False
+    else:
+        has_water = None
     family_tag = True if any(k in blob for k in FAMILY_KEYS) else None
     if family_tag:
         family = True
