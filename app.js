@@ -221,6 +221,14 @@ let lastRegionSig = '';
    建图推迟到 initMap()：列表不依赖地图，得先让它出来。maplibre 有 ~250KB，
    比列表数据重得多 —— 原先两者一起 gate 在 map 的 load 事件上，等于白等。 */
 let map = null;
+/* map 有值 ≠ 地图能用：`new maplibregl.Map()` 那一刻 map 就非空了，而 routes / ends /
+   annos / spots 四个 source 与全部图层是 style.load 回调（onStyleReady）里才加的 ——
+   中间隔着整份底图 style 的下载（实测快网络 ~650ms，弱网更长）。
+   这段窗口里点筛选 chip / 点卡片 / 敲搜索 / 点重置，全在 refresh() 的
+   map.getSource('routes').setData 上抛 TypeError，而点亮 chip、重画列表的代码都排在它后面
+   → 用户看到的是「点了毫无反应，chip 都不点亮」，控制台一条 pageerror。
+   所以判据用 mapReady，不要用 map。 */
+let mapReady = false;
 
 const emptyFC = { type: 'FeatureCollection', features: [] };
 
@@ -353,6 +361,10 @@ function onStyleReady() {
     },
     paint: { 'text-color': '#7c2d12', 'text-halo-color': '#fff', 'text-halo-width': 1.6 },
   });
+
+  // 图层齐了才放行 refresh()/select() 里那些 setData。这一行必须在所有 addSource /
+  // addLayer 之后 —— 放在上面任何位置都等于没修（见 mapReady 的注释）。
+  mapReady = true;
 
   applyBase();
   bindMapEvents();
@@ -649,7 +661,7 @@ function refresh() {
   const list = filtered();
   const hits = spotHits();
 
-  if (map) {
+  if (mapReady) {
     map.getSource('routes').setData({
       type: 'FeatureCollection',
       features: list.map(r => ({
@@ -826,7 +838,7 @@ function select(id) {
   track('路线', '点开', r.name);
   refresh();
   syncHash();   // 地址栏跟着走，浏览器自带的「复制链接」也就能用了
-  if (map && state.wpt) {
+  if (mapReady && state.wpt) {
     map.setFilter('anno-dot', ['==', ['get', 'route_id'], id]);
     map.setLayoutProperty('anno-dot', 'visibility', 'visible');
   }
@@ -1427,7 +1439,7 @@ document.getElementById('btn-reset').onclick = () => {
   document.getElementById('f-water').checked = false;
   document.getElementById('f-sort').value = 'distance';
   document.getElementById('f-q').value = '';
-  if (map) map.getSource('sel').setData(emptyFC);
+  if (mapReady) map.getSource('sel').setData(emptyFC);
   backToList();
   if (map) map.fitBounds(JINHUA.bounds, { padding: 40, duration: 700 });
 };
