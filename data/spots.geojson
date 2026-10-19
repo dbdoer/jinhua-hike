@@ -142,6 +142,43 @@
   },
   {
    "type": "Feature",
+   "id": "lingbian-titian",
+   "properties": {
+    "id": "lingbian-titian",
+    "name": "岭边梯田",
+    "kind": "打卡点",
+    "region": "婺城区",
+    "lon": 119.359727,
+    "lat": 28.83224,
+    "coord_src": "Google Earth 手标（WGS-84）",
+    "coord_acc_m": 50,
+    "intro": "岭边村上方层层叠叠的梯田，稻子成熟时晒在太阳下一片金黄，10 月上旬到 10 月 15 日左右最好看。2026 年 10 月 18 日实拍时已收割大半，来晚了一步。",
+    "access": "金华市区出发约 1 小时 30 分车程",
+    "best_from": "10-上",
+    "best_to": "10-中",
+    "verified_at": "2026-10-18",
+    "tags": [
+     "梯田",
+     "稻田",
+     "秋收"
+    ],
+    "nav_gcj": {
+     "lon": 119.364861,
+     "lat": 28.829353
+    },
+    "best_i_from": 27,
+    "best_i_to": 28
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     119.359727,
+     28.83224
+    ]
+   }
+  },
+  {
+   "type": "Feature",
    "id": "fukan-jinhua-rescue",
    "properties": {
     "id": "fukan-jinhua-rescue",
