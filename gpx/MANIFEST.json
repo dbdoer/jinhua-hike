@@ -1,7 +1,7 @@
 {
  "note": "gpx/ 里原始 GPX 文件的字节指纹。任何一项对不上，都意味着「下载原始 GPX」给出去的已经不是上传者导出的那串字节。.gitattributes 里 *.gpx 标了 -text，禁止 git 做行尾转换 —— 别去掉它。用 python tools/check_gpx_manifest.py 校验。",
  "algorithm": "sha256",
- "count": 67,
+ "count": 68,
  "files": [
   {
    "file": "三县第一潭三瀑.gpx",
@@ -114,6 +114,13 @@
    "sha256": "8bf5a28f10e7ffe08095b76f1fe9e45d346b5558326d110574b12518a3c4a45f",
    "track_id": "89209882",
    "name": "北山第一瀑石佛大盘尖"
+  },
+  {
+   "file": "北山老虎岩.gpx",
+   "bytes": 142537,
+   "sha256": "5771fb9ee8d2dbd497ec7f75d0f9f1a85240a64b47c2ced793ee4f78c0668417",
+   "track_id": "92006966",
+   "name": "北山老虎岩"
   },
   {
    "file": "华溪森林公园.gpx",

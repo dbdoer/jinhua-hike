@@ -85,7 +85,7 @@ const THEME = document.body.classList.contains('theme-spots') ? 'spots' : 'hike'
 
 | 入口 | 路径 | 主题 | 页面上有什么 |
 |---|---|---|---|
-| 徒步路线 | `/` | 无 class（默认） | 67 条两步路轨迹 + 全套筛选（点线同屏） |
+| 徒步路线 | `/` | 无 class（默认） | 68 条两步路轨迹 + 全套筛选（点线同屏） |
 | 打卡点 | `/spots/` | `theme-spots` | 只有点位，一条路线也不放 |
 | 云海参考 | `/yunhai/` | **不参与主题机制** | 一张内容页：判据 + 观景点 + 什么时候去 |
 
@@ -363,7 +363,7 @@ python tools/check_gpx_manifest.py --quiet   # 只报问题（build_routes.py �
    工作区 169314 字节、仓库里只有 164150 —— 差 5164，正好是 CRLF 的个数。
    **构建照样成功**，光看「跑通了」根本发现不了。
 2. 所以 `.gitattributes` 里写了 `*.gpx -text`，**禁止一切行尾转换，别删它**。
-3. `gpx/MANIFEST.json` 记录当前全部 GPX 的 sha256 与字节数（现在 67 个）；`build_routes.py` 收尾时会自动
+3. `gpx/MANIFEST.json` 记录当前全部 GPX 的 sha256 与字节数（现在 68 个）；`build_routes.py` 收尾时会自动
    跑一次校验（quiet 模式），不一致就提示。清单**刻意不放时间戳** —— 只有内容真变了 diff 才动。
 
 另注：站点发布的是整个仓库，`gpx/` 也在发布范围内。**因此"删掉按钮"并不等于"文件不可达"**，
