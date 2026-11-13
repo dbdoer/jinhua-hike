@@ -1,7 +1,7 @@
 {
  "note": "gpx/ 里原始 GPX 文件的字节指纹。任何一项对不上，都意味着「下载原始 GPX」给出去的已经不是上传者导出的那串字节。.gitattributes 里 *.gpx 标了 -text，禁止 git 做行尾转换 —— 别去掉它。用 python tools/check_gpx_manifest.py 校验。",
  "algorithm": "sha256",
- "count": 69,
+ "count": 73,
  "files": [
   {
    "file": "三县第一潭三瀑.gpx",
@@ -102,6 +102,13 @@
    "name": "兰溪龙门瀑布"
   },
   {
+   "file": "刘秀垄清风寨.gpx",
+   "bytes": 239540,
+   "sha256": "4381def310ead2bf880d26dc8d33cb211e4832a301e731e315a253e35e94ad65",
+   "track_id": "92988113",
+   "name": "刘秀垄清风寨"
+  },
+  {
    "file": "北山清风寨260322.gpx",
    "bytes": 83398,
    "sha256": "95cbbac11cca7ea2fc6556cbcec450dbca5160c840195f66e0707115351bdc98",
@@ -123,6 +130,13 @@
    "name": "北山老虎岩"
   },
   {
+   "file": "北山老虎岩海鳅瀑.gpx",
+   "bytes": 54475,
+   "sha256": "6c608067261a5137ce3e47586716dad509ad043158dee2defde734b96db5c76f",
+   "track_id": "93190563",
+   "name": "北山老虎岩海鳅瀑"
+  },
+  {
    "file": "华溪森林公园.gpx",
    "bytes": 135424,
    "sha256": "f5c9f522648071e50d725cc48d6a2ee1c1fefb84990e7a1822352e0c89ef6e10",
@@ -135,6 +149,13 @@
    "sha256": "2dc9494a8f444ae8abdacc2eaf0f993e56a935e6b4d06f9720e2db769967f75e",
    "track_id": "79831223",
    "name": "四顾屏260304"
+  },
+  {
+   "file": "四顾屏东线.gpx",
+   "bytes": 106971,
+   "sha256": "69b8e4dc35b25d513eee7b9a2201fb3788a03b847c307d6a3e6a684bf10b53c5",
+   "track_id": "93341408",
+   "name": "四顾屏东线"
   },
   {
    "file": "四顾屏南线上干口游步道260520.gpx",
@@ -366,6 +387,13 @@
    "sha256": "5daefca381c43d5eda9da5d8c218cbe157b3953821bd8b38369db102bf348b7b",
    "track_id": "89111404",
    "name": "皮子源燕子洞"
+  },
+  {
+   "file": "石门槛黄大仙古道.gpx",
+   "bytes": 148656,
+   "sha256": "fece25482a9ea3de7438d6a5949f03a110f26a96c72167ca756500a0ee1bfa02",
+   "track_id": "93190546",
+   "name": "石门槛黄大仙古道"
   },
   {
    "file": "笔架山三渡溪下撤路线.gpx",

@@ -316,7 +316,8 @@ def parse_gpx(path):
     lats = [p["lat"] for p in trkpts]
     lons = [p["lon"] for p in trkpts]
 
-    # 用时：优先用 trkpt 时间戳，其次用两步路扩展里的 TimeUsed
+    # 用时：优先用 trkpt 时间戳（含休息），其次用两步路扩展里的 TimeUsed
+    pause_s = float(gpx_ext["PauseTime"]) / 1000.0 if gpx_ext.get("PauseTime") else None
     dur_s = None
     ts = [p["time"] for p in trkpts if p["time"]]
     if len(ts) >= 2:
@@ -327,11 +328,17 @@ def parse_gpx(path):
             dur_s = (t1 - t0).total_seconds()
         except ValueError:
             dur_s = None
-    if dur_s is None and gpx_ext.get("TimeUsed"):
-        _used = float(gpx_ext["TimeUsed"]) / 1000.0
-        # 「路线」类文件里 TimeUsed/PauseTime 是 0，不能当成功耗时，否则用时显示成 0 h
-        dur_s = _used if _used > 0 else None
-    pause_s = float(gpx_ext["PauseTime"]) / 1000.0 if gpx_ext.get("PauseTime") else None
+    _used = float(gpx_ext["TimeUsed"]) / 1000.0 if gpx_ext.get("TimeUsed") else None
+    # 「路线」类文件里 TimeUsed/PauseTime 是 0，不能当成功耗时，否则用时显示成 0 h。
+    # trkpt 跨度（首末时间戳之差）与它同口径 —— 都含休息，加回 PauseTime 才对得上。
+    _used_span = (_used + (pause_s or 0)) if _used and _used > 0 else None
+    if dur_s is None:
+        dur_s = _used_span
+    elif _used_span and dur_s > _used_span * 1.5 + 3600:
+        # 合并/拆分得到的轨迹，trkpt 时间戳会横跨几个月：实测「刘秀垄清风寨」起点
+        # 2026-05-23、终点 2026-11-05，按首末相减算出 3985.93 h。那不是用时，是两次
+        # 出行之间的间隔。跨度明显超出上报用时的，退回 TimeUsed + PauseTime（6.51 h）。
+        dur_s = _used_span
 
     # 抽稀（约 4m 容差）。最高/最低点强制保留：前端从几何现算剖面，
     # 这两个点不在几何里，剖面峰值就会低于 ele_max。
