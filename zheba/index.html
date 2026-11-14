@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>浙BA 出线形势 · 2026 小组赛</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <h1>2026 浙BA <span class="t1">出线形势</span><span class="tag">省级争霸赛 · 小组赛</span></h1>
+      <div class="meta" style="margin:8px 0 0;text-align:left">
+        4 组 × 7 队 · 主客场双循环 · 各组前 4 进 16 强 ·
+        <span id="updated"></span>
+      </div>
+    </div>
+  </header>
+
+  <div id="notice"></div>
+
+  <div class="bar">
+    <button class="btn primary" id="btnRecord">录入新赛果</button>
+    <button class="btn" id="btnExport">导出当前数据 JSON</button>
+    <div class="seg" style="margin-left:auto">
+      <span>概率口径</span>
+      <button id="btnEven" data-mode="even">每场五五开</button>
+      <button id="btnWeighted" data-mode="weighted">按净胜分实力</button>
+    </div>
+  </div>
+
+  <div class="tabs" id="tabs"></div>
+
+  <div class="grid2">
+    <section class="card">
+      <h2>积分榜</h2>
+      <p class="hint">点击任意球队，查看它的出线条件。绿底＝已锁定前四，灰底＝已出局。</p>
+      <div style="overflow-x:auto">
+        <table id="standings"></table>
+      </div>
+      <div class="legend">
+        <span><i style="background:var(--green)"></i>已出线</span>
+        <span><i style="background:var(--gold)"></i>争夺中</span>
+        <span><i style="background:var(--red)"></i>已出局</span>
+        <span><i style="background:var(--dim2)"></i>剩余场次</span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>出线概率</h2>
+      <p class="hint" id="probHint"></p>
+      <div id="probList"></div>
+    </section>
+  </div>
+
+  <section class="card" id="analysisCard">
+    <div id="analysis"></div>
+  </section>
+
+  <section class="card">
+    <h2>本组剩余赛程</h2>
+    <p class="hint">改完比分后，这里会少一场，上面的所有情形会跟着重算。</p>
+    <div style="overflow-x:auto"><table id="schedule"></table></div>
+  </section>
+
+  <section class="card">
+    <h2>怎么读这张表 / 数据从哪来</h2>
+    <div class="foot" id="foot"></div>
+  </section>
+</div>
+
+<div class="sheet" id="sheet">
+  <div class="box">
+    <h2 style="margin-top:0">录入新赛果</h2>
+    <p class="hint">只改你手上的那几场，其余留空。点「保存并重算」后才生效；改动只存在这台电脑的浏览器里，不动原始数据文件。</p>
+    <div id="recordList"></div>
+    <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">
+      <button class="btn primary" id="btnSave">保存并重算</button>
+      <button class="btn" id="btnClose">关闭</button>
+      <button class="btn ghost" id="btnReset" style="margin-left:auto">清除全部本地修改</button>
+    </div>
+    <p class="foot" style="margin-top:14px">想永久更新数据文件：把 changelog 里的比分补进 <code>data/zba-2026.json</code>（或重跑 <code>tools/fetch_zjej.py</code> + <code>tools/build_data.py</code>）。</p>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
