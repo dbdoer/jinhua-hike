@@ -641,18 +641,18 @@
 
   function renderFoot(M) {
     const cov = DATA.coverage;
-    const miss = M.P.teams.filter((t) => (DATA.teams[t].missing_scores || 0) > 0);
+    const missTeams = M.P.teams.filter((t) => (DATA.teams[t].missing_scores || 0) > 0).length;
     $('foot').innerHTML = `
       <p><b>规则</b>：小组赛主客场双循环，每队 12 场；胜 1 场得 2 分、负 1 场得 1 分、弃权告负 0 分。
       同分依次比：同分队之间的比赛积分 → 相互净胜分 → 相互得分 → 全组净胜分 → 全组得分 → 抽签。各组前 4 名进 16 强。</p>
       <p><b>怎么算的</b>：不模拟、不估算——把本组剩余比赛的每一种胜负组合都排一遍（当前 ${M.E.T} 种 × 官方同分规则），
       数出每队进前四的占比。比分一改，结论立刻重算。</p>
       <p><b>数据</b>：已赛 ${cov.played} 场、剩余 ${cov.scheduled} 场，共 ${cov.total} 场；逐队战绩与官方积分榜核对一致。
-      其中 ${cov.played_score_unknown} 场（9 月上旬）只查到胜负、没查到具体比分，涉及：${miss.length ? miss.join('、') : '无'}。
-      这些场次不影响积分，只影响「净胜分」这层比较，所以相关球队的净胜分标了 ≈（用官方场均得失分校准）。</p>
+      其中 ${cov.played_score_unknown} 场（9 月上旬）只查到胜负、没查到具体比分，本组 ${missTeams} 支球队都沾到。
+      这些场次不影响积分，只影响「净胜分」这层比较，所以榜上的净胜分标了 ≈（用官方场均得失分校准）。</p>
       <p><b>加时</b>：赛制提到加时胜另有 0.5 分加成，但公开积分榜与「胜2负1」完全对得上，故未单列。</p>
-      <p><b>更新</b>：页面上的「录入新赛果」只改这台电脑的浏览器；要改数据本身，编辑 <code>data/zba-2026.json</code>，
-      或重跑 <code>python3 tools/fetch_zjej.py</code> 和 <code>python3 tools/build_data.py</code>。</p>`;
+      <p><b>更新</b>：页面上的「录入新赛果」只改这台电脑的浏览器；要改数据本身，回到项目目录
+      <code>E:\\code\\zheba</code> 改 <code>data/zba-2026.json</code>，或跑 <code>一键更新.bat</code>。</p>`;
   }
 
   /* ---------------- 录入面板 ---------------- */
