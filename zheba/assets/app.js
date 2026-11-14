@@ -1,5 +1,9 @@
 /* 浙BA 出线形势 —— 枚举引擎 + 渲染
-   规则：胜 2 分、负 1 分；同分依次比 相互比赛积分 → 相互净胜分 → 相互得分 → 全组净胜分 → 全组得分。
+   规则：胜 2 分、负 1 分。排名口径＝官方积分榜口径：积分降序 → 胜场降序 → 官方名次序。
+   （2026-11-14 改：原先按规程同分链「相互比赛积分 → 相互净胜分 → …」排，实测与官方榜
+     四组全部不一致 —— A 江山/余姚、B 瑞安/永康、C 诸暨/衢州、D 宁波/义乌，官方顺序
+     均与该链相反，且 B、D 两组的官方顺序用胜场/净胜分/相互战绩都解释不通。站主要求
+     「以官方榜为准」，故整站（展示与推演）统一改用官方口径，避免名次与徽章两套规则。）
    出线：各组前 4 名。
    所有结论都由「枚举剩余比赛的全部胜负组合」算出。
 */
@@ -62,30 +66,12 @@
     const pts = new Int16Array(n);
     for (let i = 0; i < n; i++) pts[i] = 2 * W[i] + L[i];
 
-    const byPts = new Map();
-    for (let i = 0; i < n; i++) {
-      if (!byPts.has(pts[i])) byPts.set(pts[i], []);
-      byPts.get(pts[i]).push(i);
-    }
-    const hP = new Int16Array(n), hD = new Float64Array(n), hS = new Float64Array(n);
-    for (const grp of byPts.values()) {
-      if (grp.length < 2) continue;
-      const set = new Set(grp);
-      for (const m of P.base) {
-        if (!set.has(m.h) || !set.has(m.a)) continue;
-        if (m.homeWin) { hP[m.h] += 2; hP[m.a] += 1; } else { hP[m.a] += 2; hP[m.h] += 1; }
-        if (m.known) { hD[m.h] += m.hs - m.as; hD[m.a] -= m.hs - m.as; hS[m.h] += m.hs; hS[m.a] += m.as; }
-      }
-      for (let i = 0; i < P.sched.length; i++) {
-        const m = P.sched[i];
-        if (!set.has(m.h) || !set.has(m.a)) continue;
-        if (oc[i] === 0) { hP[m.h] += 2; hP[m.a] += 1; } else { hP[m.a] += 2; hP[m.h] += 1; }
-      }
-    }
+    // 规程同分链（相互比赛积分 hP → 相互净胜分 hD → …）已停用，理由见文件头。
+    // 保留这段计算会让 2^N 次枚举白跑一遍，故整块去掉；要恢复就把下面 sort 换回：
+    //   pts[b]-pts[a] || hP[b]-hP[a] || hD[b]-hD[a] || P.adjD[b]-P.adjD[a] || P.adjPF[b]-P.adjPF[a] || a-b
+    // 并同时恢复 byPts / hP / hD 的累加。
     const order = Array.from({ length: n }, (_, i) => i);
-    order.sort((a, b) =>
-      pts[b] - pts[a] || hP[b] - hP[a] || hD[b] - hD[a] ||
-      P.adjD[b] - P.adjD[a] || P.adjPF[b] - P.adjPF[a] || a - b);
+    order.sort((a, b) => pts[b] - pts[a] || W[b] - W[a] || a - b);
     return { order, pts, W, L };
   }
 
@@ -435,6 +421,8 @@
   }
 
   // 为什么"全胜也不一定行"：把铁定压在目标队前面的队点出来
+  // 注意：此函数已无调用方。排名口径改为「积分 → 胜场 → 官方名次序」后，
+  // 同分不再比相互战绩；要恢复规程口径再把它接回 blockerNote()。
   function h2hBetween(P, a, b) {
     let aw = 0, bw = 0, n = 0;
     for (const m of P.base) {
@@ -450,14 +438,17 @@
     const { P } = M;
     const r0 = currentRank(P);
     const maxPts = r0.pts[tIdx] + 2 * P.rem[tIdx];
+    const wT = r0.W[tIdx] + P.rem[tIdx]; // 目标全胜后的胜场数
     const sure = [], maybe = [];
     for (let u = 0; u < P.n; u++) {
       if (u === tIdx) continue;
       const minPts = r0.pts[u] + P.rem[u]; // 全输也每场拿 1 分
       if (minPts < maxPts) continue;
-      const h = h2hBetween(P, u, tIdx);
-      const h2hDone = h.n >= 2;
-      if (minPts > maxPts || (h2hDone && h.aw > h.bw)) sure.push(P.teams[u]);
+      // 排名口径＝积分 → 胜场 → 官方名次序（与 rank() 一致，不再用相互战绩）
+      const wU = r0.W[u]; // 对手全输时胜场不变
+      const ahead = minPts > maxPts
+        || (minPts === maxPts && (wU > wT || (wU === wT && u < tIdx)));
+      if (ahead) sure.push(P.teams[u]);
       else maybe.push(P.teams[u]);
     }
     return { maxPts, sure, maybe };
@@ -468,10 +459,10 @@
     const bits = [];
     if (bl.sure.length) {
       bits.push(`<b>${bl.sure.join('、')}</b> 就算剩下全输，积分也不低于 ${tName} 全胜的 ${bl.maxPts} 分`
-        + `（同分还要先比相互战绩，对${tName}是吃亏的一方）`);
+        + `（同分时胜场也比 ${tName} 多，或名次排在前面，压得住）`);
     }
     if (bl.maybe.length) {
-      bits.push(`<b>${bl.maybe.join('、')}</b> 与 ${tName} 同分时，要先比相互战绩/净胜分，还有得争`);
+      bits.push(`<b>${bl.maybe.join('、')}</b> 与 ${tName} 同分时要看胜场数与官方名次，还有得争`);
     }
     if (!bits.length) return '';
     const tail = bl.sure.length >= ADV
@@ -644,8 +635,8 @@
     const missTeams = M.P.teams.filter((t) => (DATA.teams[t].missing_scores || 0) > 0).length;
     $('foot').innerHTML = `
       <p><b>规则</b>：小组赛主客场双循环，每队 12 场；胜 1 场得 2 分、负 1 场得 1 分、弃权告负 0 分。
-      同分依次比：同分队之间的比赛积分 → 相互净胜分 → 相互得分 → 全组净胜分 → 全组得分 → 抽签。各组前 4 名进 16 强。</p>
-      <p><b>怎么算的</b>：不模拟、不估算——把本组剩余比赛的每一种胜负组合都排一遍（当前 ${M.E.T} 种 × 官方同分规则），
+      排名口径：积分降序 → 胜场降序 → 官方榜名次序。这与浙BA官方积分榜的排法一致（本页不另设同分判据）。各组前 4 名进 16 强。</p>
+      <p><b>怎么算的</b>：不模拟、不估算——把本组剩余比赛的每一种胜负组合都排一遍（当前 ${M.E.T} 种 × 官方排名口径），
       数出每队进前四的占比。比分一改，结论立刻重算。</p>
       <p><b>数据</b>：已赛 ${cov.played} 场、剩余 ${cov.scheduled} 场，共 ${cov.total} 场；逐队战绩与官方积分榜核对一致。
       其中 ${cov.played_score_unknown} 场（9 月上旬）只查到胜负、没查到具体比分，本组 ${missTeams} 支球队都沾到。
