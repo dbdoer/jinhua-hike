@@ -246,6 +246,42 @@
   },
   {
    "type": "Feature",
+   "id": "wuyi-jinjiaoyi",
+   "properties": {
+    "id": "wuyi-jinjiaoyi",
+    "name": "武义金交椅",
+    "kind": "打卡点",
+    "region": "武义县",
+    "lon": 119.654681,
+    "lat": 28.801088,
+    "coord_src": "Google Earth 手标（WGS-84）",
+    "coord_acc_m": 50,
+    "intro": "武义丹霞地貌丰富，这里是极其罕见的弧形丹霞赤崖，当地人称「金交椅」：三个不同方向的断崖合围，在风化水蚀作用下形成一个近乎完美的弧形。崖下是茶园和几间老屋。2026 年 11 月 22 日实地打卡。",
+    "access": "自驾前往，导航到武义县宋村一带即可；具体停车位置与上山路口未记录",
+    "best_note": "四季皆宜",
+    "verified_at": "2026-11-22",
+    "tags": [
+     "丹霞",
+     "赤崖",
+     "茶园"
+    ],
+    "nav_gcj": {
+     "lon": 119.659373,
+     "lat": 28.797906
+    },
+    "best_i_from": null,
+    "best_i_to": null
+   },
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     119.654681,
+     28.801088
+    ]
+   }
+  },
+  {
+   "type": "Feature",
    "id": "biye-tree",
    "properties": {
     "id": "biye-tree",
